@@ -1,19 +1,19 @@
 # Matrix Notepad
-> A buggy way to collaborate on text documents using the [Matrix](https://matrix.org) protocol
+> A buggy way to collaborate on text documents using the [Matrix](https://matrix.org) protocol. Consider this the Matrix Console of collaboration!
 
 A working demo URL is coming soon.
 Come chat at [#matrix-collaboration:kb1rd.net](https://matrix.to/#/!lJKzxfcqmWpRzHxAsh:kb1rd.net?via=matrix.org)! I'd love to hear about what you think (and what issues you encounter)!
 
 ## Brief Roadmap
 This is not in any particular order:
-[x] More or less working insertations
-[x] More or less working removals
-[ ] Conflict resolution
-[ ] Improved UI/UX (this will be incremental)
-[ ] Unit testing!!!
-[ ] Create a different package for the `Logootish` algorithm
-[ ] Node 'squashing' or similar. Currently Matrix Notepad has to sync ALL of the events :(
-[ ] Text styling (making it a more fully-featured text editor)
+* [x] More or less working insertations
+* [x] More or less working removals
+* [ ] Conflict resolution
+* [ ] Improved UI/UX (this will be incremental)
+* [ ] Unit testing!!!
+* [ ] Create a different package for the `Logootish` algorithm
+* [ ] Node 'squashing' or similar. Currently Matrix Notepad has to sync ALL of the events :(
+* [ ] Text styling (making it a more fully-featured text editor)
 In addition, I think it would be a good idea to discuss future possibilities for sharing more than just text over Matrix and the possibility of creating a unified 'app host' client that manages permissions for applications and allows the user to browse a directory structure.
 
 ## Usage

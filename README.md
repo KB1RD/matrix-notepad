@@ -1,6 +1,8 @@
 # Matrix Notepad
 > A buggy way to collaborate on text documents using the [Matrix](https://matrix.org) protocol. Consider this the Matrix Console of collaboration!
 
+![Screenshot](static/doc.png)
+
 A working demo URL is coming soon.
 Come chat at [#matrix-collaboration:kb1rd.net](https://matrix.to/#/!lJKzxfcqmWpRzHxAsh:kb1rd.net?via=matrix.org)! I'd love to hear about what you think (and what issues you encounter)!
 
@@ -19,6 +21,7 @@ In addition, I think it would be a good idea to discuss future possibilities for
 ## Usage
 As soon as this is up, I'll work on getting a production site live. If you do choose to build it locally in the mean time, the setup is as follows:
 Currently, there's no proper sign in, so you sign in with your access token, which can be found under settings in Riot.im.
+![Setup](static/setup.png)
 Click the gear icon in Matrix Notepad. This will open up a sidebar for your settings. You'll need...
 * Your homeserver URL (In Riot.im, go to Settings -> About and scroll down)
 * An access token (In Riot.im, go to Settings -> About and scroll down)

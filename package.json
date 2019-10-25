@@ -1,0 +1,39 @@
+{
+  "name": "matrix-notepad",
+  "version": "0.1.0",
+  "description": "Store & collaborate on text files over the Matrix protocol",
+  "author": "Nathan Pennie",
+  "license" : "GPL-3.0",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt",
+    "build": "nuxt build",
+    "start": "nuxt start",
+    "generate": "nuxt generate",
+    "lint": "eslint --ext .js,.vue --ignore-path .gitignore .",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@nuxtjs/axios": "^5.3.6",
+    "ant-design-vue": "^1.1.10",
+    "codemirror": "^5.48.2",
+    "matrix-js-sdk": "^2.3.0",
+    "nuxt": "^2.0.0",
+    "vue-codemirror": "^4.0.6",
+    "vuex-persist": "^2.0.1"
+  },
+  "devDependencies": {
+    "@nuxtjs/eslint-config": "^1.0.1",
+    "@nuxtjs/eslint-module": "^1.0.0",
+    "babel-eslint": "^10.0.1",
+    "eslint": "^6.1.0",
+    "eslint-plugin-nuxt": ">=0.4.2",
+    "eslint-config-prettier": "^4.1.0",
+    "eslint-plugin-prettier": "^3.0.1",
+    "prettier": "^1.16.4",
+    "@vue/test-utils": "^1.0.0-beta.27",
+    "babel-jest": "^24.1.0",
+    "jest": "^24.1.0",
+    "vue-jest": "^4.0.0-0"
+  }
+}

@@ -3,8 +3,7 @@
 
 ![Screenshot](static/doc.png)
 
-A working demo URL is coming soon.
-Come chat at [#matrix-collaboration:kb1rd.net](https://matrix.to/#/!lJKzxfcqmWpRzHxAsh:kb1rd.net?via=matrix.org)! I'd love to hear about what you think (and what issues you encounter)!
+Check it out at [matrix-notepad.kb1rd.net](https://matrix-notepad.kb1rd.net/) and come chat at [#matrix-collaboration:kb1rd.net](https://matrix.to/#/!lJKzxfcqmWpRzHxAsh:kb1rd.net?via=matrix.org)! I'd love to hear about what you think (and what issues you encounter)!
 
 ## Brief Roadmap
 This is not in any particular order:
@@ -19,8 +18,7 @@ This is not in any particular order:
 In addition, I think it would be a good idea to discuss future possibilities for sharing more than just text over Matrix and the possibility of creating a unified 'app host' client that manages permissions for applications and allows the user to browse a directory structure.
 
 ## Usage
-As soon as this is up, I'll work on getting a production site live. If you do choose to build it locally in the mean time, the setup is as follows:
-Currently, there's no proper sign in, so you sign in with your access token, which can be found under settings in Riot.im.
+Open [matrix-notepad.kb1rd.net](https://matrix-notepad.kb1rd.net/). Currently, there's no proper sign in, so you sign in with your access token, which can be found under settings in Riot.im.
 ![Setup](static/setup.png)
 Click the gear icon in Matrix Notepad. This will open up a sidebar for your settings. You'll need...
 * Your homeserver URL (In Riot.im, go to Settings -> About and scroll down)

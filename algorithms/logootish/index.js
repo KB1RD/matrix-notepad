@@ -645,7 +645,8 @@ class Document {
     // regardless of discontinuities in Logoot positions
     let last_end = nstart
     let last_known_position = known_start
-    skip_ranges.forEach(({ start, end, length }) => {
+    skip_ranges.forEach((skip_range) => {
+      const { start, end } = skip_range
       // Clamped regions to consider. Anything outside of the node to be
       // inserted doesn't matter, so we clamp it out
       // Of course, that means we have to recalculate EVERYTHING *sigh*
@@ -672,7 +673,9 @@ class Document {
 
       if (node.length <= 0) {
         last_end = cend
-        last_known_position += clength
+        if (skip_range !== lesser) {
+          last_known_position += clength
+        }
         return
       }
 
@@ -687,7 +690,10 @@ class Document {
       newnodes.push(node)
 
       last_end = cend
-      last_known_position += clength + node.length
+      last_known_position += node.length
+      if (skip_range !== lesser) {
+        last_known_position += clength
+      }
     })
     return newnodes
   }
@@ -748,6 +754,7 @@ class Document {
     )
 
     arraymap(nodes, (node) => {
+      let last_known_position = node.known_position
       return this._mergeNode(
         this.removal_bst,
         node.start,
@@ -763,8 +770,9 @@ class Document {
       ).map((newnode) => {
         // known_positions in the removal tree are BS, so set them correctly
         // here. TODO: Remove known_position from removals
-        newnode.known_position = node.known_position
+        newnode.known_position = last_known_position
         newnode._offset += node._offset
+        last_known_position += newnode.length
         return newnode
       })
     })

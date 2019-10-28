@@ -55,6 +55,10 @@ class Int32 {
   get js_int() {
     return this.int32[0]
   }
+
+  toString() {
+    return this.int32[0].toString()
+  }
 }
 
 export { Int32 }

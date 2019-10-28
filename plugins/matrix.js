@@ -56,8 +56,14 @@ export default ({ store }) => {
       (data) => {
         switch (data.type) {
           case EventType.INSERTATION:
+            if (store.getters['debugstate/shouldBreak']('LI')) {
+              debugger
+            }
             return client.sendEvent(room, namespace + '.ins', data, '')
           case EventType.REMOVAL:
+            if (store.getters['debugstate/shouldBreak']('LR')) {
+              debugger
+            }
             return client.sendEvent(room, namespace + '.rem', data, '')
           default:
             return new Promise((resolve, reject) =>
@@ -79,10 +85,16 @@ export default ({ store }) => {
         if (room.roomId === room_id && !event.status) {
           switch (event.getType()) {
             case namespace + '.ins':
+              if (store.getters['debugstate/shouldBreak']('RI')) {
+                debugger
+              }
               has_rxed_new_msg = true
               doc.remoteInsert(event.event.content)
               return
             case namespace + '.rem':
+              if (store.getters['debugstate/shouldBreak']('RR')) {
+                debugger
+              }
               has_rxed_new_msg = true
               doc.remoteRemove(event.event.content)
               return
@@ -98,6 +110,10 @@ export default ({ store }) => {
 
     globals.client = client
     globals.doc = doc
+    if (store.state.debugstate.assign_window_vars) {
+      window.mx_client = client
+      window.doc = doc
+    }
 
     await client.startClient({ initialSyncLimit: 0 }).catch((e) => {
       client.stopClient()
@@ -126,11 +142,17 @@ export default ({ store }) => {
       throw e
     })
 
+    globals.manualSync = async (n) => {
+      await client.scrollback(room_obj, n)
+    }
+
     // Sync back until we are not recieving document events
-    do {
-      has_rxed_new_msg = false
-      await client.scrollback(room_obj, 50)
-    } while (has_rxed_new_msg)
+    if (store.state.debugstate.enable_syncback) {
+      do {
+        has_rxed_new_msg = false
+        await client.scrollback(room_obj, 50)
+      } while (has_rxed_new_msg)
+    }
   }
 
   globals.shutdown = () => {

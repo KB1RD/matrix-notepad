@@ -120,6 +120,14 @@ class Bst {
     }
   }
 
+  operateOnAll(operation, node = this.bst_root, undef = false) {
+    if (node && !undef) {
+      this.operateOnAll(operation, node.left, !node.left)
+      operation(node)
+      this.operateOnAll(operation, node.right, !node.right)
+    }
+  }
+
   getRange(start, endm1) {
     const nodes = []
     this.operateOnAllRange(start, endm1, (n) => nodes.push(n))
@@ -149,6 +157,15 @@ class Bst {
     })
 
     return nodes
+  }
+
+  toString() {
+    let str = 'BST [\n'
+    this.operateOnAll(({ data }) => {
+      str += '  ' + data.toString() + '\n'
+    })
+    str += ']'
+    return str
   }
 }
 

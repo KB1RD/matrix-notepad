@@ -15,6 +15,8 @@
         />
       </a-drawer>
 
+      <DebugPanel v-if="$store.state.debug" />
+
       <a-spin :spinning="is_busy || is_reconnecting">
         <a-icon slot="indicator" type="loading" style="font-size: 48px" spin />
 
@@ -35,13 +37,7 @@
             <a-icon type="setting" @click="openMatrixSetup" />
             <!-- <a-icon type="share-alt" /> -->
           </template>
-          <a-card-meta
-            title="Document"
-            :description="
-              `${$store.state.matrix.working_room} - ${$store.state.matrix.matrix_state}`
-            "
-          >
-          </a-card-meta>
+          <a-card-meta title="Document" />
           <no-ssr placeholder="Codemirror Loading...">
             <codemirror
               ref="codemirror"
@@ -60,11 +56,12 @@
 <script>
 import { mapMutations } from 'vuex'
 import TemporarySignin from '@/components/TemporarySignin'
+import DebugPanel from '@/components/DebugPanel'
 
 import { debug } from '@/plugins/debug'
 
 export default {
-  components: { TemporarySignin },
+  components: { TemporarySignin, DebugPanel },
 
   data() {
     return {

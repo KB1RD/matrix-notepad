@@ -80,7 +80,7 @@
           <a-checkbox
             v-decorator="['debug', { initialValue: $store.state.debug }]"
           >
-            Enable verbose debug
+            Enable debug mode
           </a-checkbox>
         </a-form-item>
       </a-col>

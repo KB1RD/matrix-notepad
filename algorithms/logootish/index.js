@@ -131,6 +131,15 @@ class LogootPosition {
   toJSON() {
     return this.array
   }
+
+  toString() {
+    let str = '['
+    this.array.forEach((el, i, a) => {
+      str += el.toString() + (i >= a.length - 1 ? '' : ',')
+    })
+    str += ']'
+    return str
+  }
 }
 
 class LogootNode {
@@ -152,6 +161,16 @@ class LogootNode {
 
   get end() {
     return this.start.offsetLowest(this.length)
+  }
+
+  toString() {
+    return (
+      this.start.toString() +
+      (typeof this.known_position === 'number'
+        ? '(' + this.known_position + ')'
+        : '') +
+      ` + ${this.length} @ ${this.rclk}`
+    )
   }
 }
 

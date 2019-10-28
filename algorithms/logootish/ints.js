@@ -11,6 +11,9 @@ class Int32 {
   }
 
   add(n) {
+    if (!n) {
+      return this
+    }
     if (typeof n === 'number') {
       this.int32[0] += n
     } else if (n && n.int32) {
@@ -21,6 +24,9 @@ class Int32 {
     return this
   }
   sub(n) {
+    if (!n) {
+      return this
+    }
     if (typeof n === 'number') {
       this.int32[0] -= n
     } else if (n && n.int32) {

@@ -102,6 +102,14 @@ class LogootPosition {
     })
   }
 
+  equivalentPositionAtLevel(level) {
+    return Object.assign(new LogootPosition(0, undefined, undefined), {
+      array: new Array(level + 1).fill(0, 0, level + 1).map((el, i) => {
+        return new LogootInt(this.array[i])
+      })
+    })
+  }
+
   cmp(pos, level = 0) {
     if (level >= this.array.length) {
       if (this.array.length === pos.array.length) {
@@ -641,8 +649,14 @@ class Document {
       // Clamped regions to consider. Anything outside of the node to be
       // inserted doesn't matter, so we clamp it out
       // Of course, that means we have to recalculate EVERYTHING *sigh*
-      const cstart = start.clamp(nstart, nend)
-      const cend = end.clamp(nstart, nend)
+      const cstart = start.clamp(
+        nstart.equivalentPositionAtLevel(start.levels),
+        nend.equivalentPositionAtLevel(start.levels)
+      )
+      const cend = end.clamp(
+        nstart.equivalentPositionAtLevel(end.levels),
+        nend.equivalentPositionAtLevel(end.levels)
+      )
       const clevel = cstart.levels
       const clength = new LogootInt(cend.level(clevel)).sub(
         cstart.level(clevel)
@@ -863,7 +877,7 @@ class Document {
           this.removal_bst,
           last_end,
           length,
-          (node) => {
+          (node, conflict) => {
             if (node.rclk.cmp(rclk) < 0) {
               return -1
             }

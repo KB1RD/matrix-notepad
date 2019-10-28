@@ -749,7 +749,7 @@ class Document {
       ).map((newnode) => {
         // known_positions in the removal tree are BS, so set them correctly
         // here. TODO: Remove known_position from removals
-        newnode.known_position = node.known_position + newnode._offset
+        newnode.known_position = node.known_position
         newnode._offset += node._offset
         return newnode
       })

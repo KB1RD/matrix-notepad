@@ -4,7 +4,10 @@ export default {
    ** Headers of the page
    */
   head: {
-    title: 'Matrix Notepad',
+    titleTemplate(titleChunk) {
+      const name = 'Matrix Notepad'
+      return titleChunk ? `${name} - ${titleChunk}` : name
+    },
     meta: [
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },

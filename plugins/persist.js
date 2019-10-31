@@ -1,6 +1,9 @@
+import Vue from 'vue'
 import VuexPersistence from 'vuex-persist'
 
 export default ({ store }) => {
+  const callbacks = []
+  let storeReady = false
   window.onNuxtReady(() => {
     new VuexPersistence({
       reducer: (state) => ({
@@ -14,5 +17,20 @@ export default ({ store }) => {
         debug: state.debug
       })
     }).plugin(store)
+    storeReady = true
+    callbacks.forEach((cb) => {
+      try {
+        cb()
+      } catch (e) {
+        console.error(e)
+      }
+    })
   })
+
+  Vue.prototype.$onPersistStoreReady = (func) => {
+    if (storeReady) {
+      return func()
+    }
+    callbacks.push(func)
+  }
 }

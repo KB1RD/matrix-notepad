@@ -269,10 +269,6 @@ class Document {
     this.removeLocal = removeLocal
   }
 
-  start() {
-    return new Promise((resolve) => resolve())
-  }
-
   _removePendingEvent(event) {
     const index = this.pending_events.indexOf(event)
     if (index >= 0) {
@@ -706,7 +702,7 @@ class Document {
     }
     const nstart = new LogootPosition(0).fromEvent(event_contents.start)
     const this_rclk = new LogootInt(event_contents.rclk)
-    debug.log('REMOTE INSERT', body, JSON.stringify(nstart))
+    debug.log('REMOTE INSERT', body, nstart.toString(), this_rclk.toString())
 
     if (this_rclk.cmp(this.vector_clock) > 0) {
       this.vector_clock = this_rclk

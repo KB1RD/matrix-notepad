@@ -1,7 +1,6 @@
 export const state = () => ({
   breakpoints: [],
-  enable_syncback: true,
-  assign_window_vars: false
+  enable_syncback: true
 })
 
 export const getters = {
@@ -13,9 +12,6 @@ export const getters = {
   },
   syncback(state) {
     return state.enable_syncback
-  },
-  shouldAssignWindowVars(state) {
-    return state.assign_window_vars
   }
 }
 
@@ -31,11 +27,5 @@ export const mutations = {
       throw new TypeError('Syncback enabled state must be a boolean')
     }
     state.enable_syncback = enabled
-  },
-  setAssignWindowVars(state, enabled) {
-    if (typeof enabled !== 'boolean') {
-      throw new TypeError('Syncback enabled state must be a boolean')
-    }
-    state.assign_window_vars = enabled
   }
 }

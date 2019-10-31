@@ -27,17 +27,20 @@
       <a-col :span="5">
         <a-form-item label="Manual sync">
           <a-input-group compact>
-            <a-input-number :min="0" :max="1000" v-model="syncdepth" />
-            <a-button type="primary" @click="fetchSyncback">Fetch</a-button>
+            <a-input-number
+              v-model="syncdepth"
+              :min="0"
+              :max="1000"
+              :disabled="!cansync"
+            />
+            <a-button
+              type="primary"
+              :disabled="!cansync"
+              @click="$emit('fetch', syncdepth)"
+            >
+              Fetch
+            </a-button>
           </a-input-group>
-        </a-form-item>
-      </a-col>
-      <a-col :span="5">
-        <a-form-item label="Assign window variables">
-          <a-switch
-            :checked="$store.getters['debugstate/shouldAssignWindowVars']"
-            @change="(v) => $store.commit('debugstate/setAssignWindowVars', v)"
-          />
         </a-form-item>
       </a-col>
       <a-col :span="6">
@@ -54,7 +57,15 @@
 </template>
 
 <script>
+// Not having console statements defeats the purpose of this. The debugger is
+// something intended for use by experienced users, so use of console and
+// debugger statements is fine since they will be expecting it
+/* eslint-disable no-console */
 export default {
+  props: {
+    cansync: Boolean
+  },
+
   data() {
     return {
       syncdepth: 1,
@@ -80,17 +91,6 @@ export default {
   },
 
   methods: {
-    fetchSyncback() {
-      if (this.$matrix.manualSync) {
-        this.$matrix
-          .manualSync(this.syncdepth)
-          .then(() => this.$message.info('Sync complete'))
-          .catch((e) => {
-            this.$message.error('Sync failed')
-            console.error(e)
-          })
-      }
-    },
     dumpLogoot() {
       if (this.$matrix.doc) {
         console.log(this.$matrix.doc.logoot_bst.toString())

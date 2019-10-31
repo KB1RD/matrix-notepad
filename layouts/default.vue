@@ -1,8 +1,66 @@
 <template>
   <div>
+    <a-popover title="My Account" placement="leftBottom">
+      <template slot="content">
+        <a-checkbox
+          style="margin-bottom: 10px;"
+          :checked="$store.state.debug"
+          @change="(e) => $store.commit('setDebugEnabled', e.target.checked)"
+        >
+          Enable Debug
+        </a-checkbox>
+        <a-button type="danger" size="small" block @click="onSignOut">
+          Sign Out
+        </a-button>
+      </template>
+      <a-avatar class="floating-avatar" size="large" icon="user" />
+    </a-popover>
+
     <nuxt />
   </div>
 </template>
+
+<script>
+import { debug } from '@/plugins/debug'
+
+export default {
+  computed: {
+    signed_in() {
+      return this.$store.getters['matrix/signedIn']
+    }
+  },
+
+  watch: {
+    signed_in() {
+      this.ensureSignedIn()
+    }
+  },
+  mounted() {
+    this.ensureSignedIn()
+  },
+
+  methods: {
+    ensureSignedIn() {
+      if (!this.signed_in) {
+        const redirect_to = this.$route.path
+        this.$router.replace({ path: '/login', query: { redirect_to } })
+        debug.log('Not signed in. Redirecting to login...')
+        return true
+      }
+      return false
+    },
+
+    onSignOut() {
+      this.$store.dispatch(
+        'watchBlockingOperation',
+        (async () => {
+          await this.$matrix.signOut()
+        })()
+      )
+    }
+  }
+}
+</script>
 
 <!-- The defaults do just *fine* ATM -->
 <style>
@@ -25,32 +83,9 @@ html {
   margin: 0;
 }
 
-.button--green {
-  display: inline-block;
-  border-radius: 4px;
-  border: 1px solid #3b8070;
-  color: #3b8070;
-  text-decoration: none;
-  padding: 10px 30px;
-}
-
-.button--green:hover {
-  color: #fff;
-  background-color: #3b8070;
-}
-
-.button--grey {
-  display: inline-block;
-  border-radius: 4px;
-  border: 1px solid #35495e;
-  color: #35495e;
-  text-decoration: none;
-  padding: 10px 30px;
-  margin-left: 15px;
-}
-
-.button--grey:hover {
-  color: #fff;
-  background-color: #35495e;
+.floating-avatar {
+  position: fixed;
+  top: 8px;
+  left: 8px;
 }
 </style>

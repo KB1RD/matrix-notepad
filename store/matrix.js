@@ -6,7 +6,9 @@ export const state = () => ({
     access_token: ''
   },
 
-  working_room: ''
+  working_room: '',
+
+  rooms: []
 })
 
 export const getters = {
@@ -14,6 +16,18 @@ export const getters = {
     const { hs, access_token } = state.credentials
     const { working_room } = state
     return { hs, access_token, working_room }
+  },
+
+  signedIn(state) {
+    return (
+      state.matrix_state &&
+      state.matrix_state !== '' &&
+      state.matrix_state.toLowerCase() !== 'stopped'
+    )
+  },
+
+  rooms(state) {
+    return state.rooms
   }
 }
 
@@ -26,6 +40,17 @@ export const mutations = {
     state.credentials.hs = hs
     state.credentials.access_token = token
     state.working_room = room
+  },
+
+  updateRooms(state, rooms) {
+    if (!Array.isArray(rooms)) {
+      throw new TypeError('Rooms object is not an array')
+    }
+
+    // Matrix mutates rooms directly, so we must duplicate them
+    state.rooms = rooms.map(({ roomId, name }) => {
+      return { roomId, name }
+    })
   },
 
   // Signin information is pushed in seperately because it is confirmed before

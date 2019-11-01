@@ -14,6 +14,7 @@
           v-model="text"
           style="text-align: left; margin: -24px -32px; margin-top: 3em; overflow: auto;"
           :options="cmOption"
+          @ready="$emit('ready')"
           @changes="onNewChanges"
         />
       </client-only>

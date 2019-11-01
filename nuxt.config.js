@@ -64,5 +64,8 @@ export default {
   // axios: {},
   build: {
     extend(config, ctx) {}
+  },
+  generate: {
+    routes: ['404']
   }
 }

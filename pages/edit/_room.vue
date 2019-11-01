@@ -27,6 +27,7 @@
         v-if="!has_fatal_error"
         ref="editor"
         :loading="is_busy || is_reconnecting"
+        @ready="cm_ready = true"
         @settings-clicked="openMatrixSetup"
         @insert="(i) => (documentInsert ? documentInsert(i) : undefined)"
         @remove="(r) => (documentRemove ? documentRemove(r) : undefined)"
@@ -60,8 +61,18 @@ export default {
 
   data() {
     return {
-      has_fatal_error: false
-      // setup_visible: false
+      has_fatal_error: false,
+      // setup_visible: false,
+      cm_ready: false,
+      cm_resolve_ready: undefined
+    }
+  },
+
+  watch: {
+    cm_ready() {
+      if (this.cm_ready && this.cm_resolve_ready) {
+        this.cm_resolve_ready()
+      }
     }
   },
 
@@ -88,6 +99,14 @@ export default {
       'watchBlockingOperation',
       (async () => {
         try {
+          // A poorly written system to wait for CodeMirror to be ready
+          await new Promise((resolve, reject) => {
+            if (self.cm_ready) {
+              resolve()
+            } else {
+              self.cm_resolve_ready = resolve
+            }
+          })
           const doc = await self.$matrix.createDocument(
             this.$route.params.room,
             this.$refs.editor.insert,

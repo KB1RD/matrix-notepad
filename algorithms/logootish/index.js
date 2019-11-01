@@ -381,9 +381,6 @@ class Document {
       greater = greater[0]
     }
 
-    // TODO: Locate neighboring nodes that are still in the PENDING state and
-    // add the text to them instead of sending a whole new event
-
     // Finally, we can create positions...
     let left_position
     let right_position
@@ -577,25 +574,47 @@ class Document {
               informRemoval(n, n.known_position, n.length, true)
               n.length = 0
             } else {
-              // Ok, now we have to find out how much of the node is hanging out
-              // on either side of the removal
-              if (clip_nstart) {
-                const l = new LogootInt(n.start.level(level)).sub(
-                  end.level(level)
-                ).js_int
-                n.length -= l
+              // Find the length of the middle region of the node
+              // nnnnnRRRRnnnn <- Where the 'R' is (l=4 in this case)
+              const l = new LogootInt(end.level(level)).sub(start.level(level))
+                .js_int
 
-                informRemoval(n, n.known_position + (n.length - l), l, false)
+              // Make a copy because we will need to modify the original
+              const endnode = new LogootNode(n)
+              endnode.start = end
+              const n_end_old = n.end.offsetLowest(0)
+
+              if (clip_nstart) {
+                // This means we're dealing with an area ahead of the node with
+                // a length > 0:
+                // NNNNrrrrrnnnnn (As above, 'r' is the section of the node
+                // being removed)
+                n.length = new LogootInt(start.level(level)).sub(
+                  n.start.level(level)
+                ).js_int
+
+                endnode.known_position += n.length
+                endnode.start.offsetLowest(n.known_position + n.length + l)
+                informRemoval(n, n.known_position + n.length, l, n.length <= 0)
+              } else {
+                // The removal must be right up against the edge of the node,
+                // so we can take an easy shortcut:
+                // RRRRnnnnnn
+                informRemoval(n, n.known_position, l, true)
+                endnode.start.offsetLowest(n.known_position + l)
               }
               if (clip_nend) {
-                n.start = end
-                const l = new LogootInt(n.end.level(level)).sub(
-                  start.level(level)
+                // Ok, so now we have to add a new node to account for the
+                // trailing end portion: [nnnn]rrrrNNNNN <- that
+                // We also have to re-add it to the BSTs because they are
+                // sorted by start position, so if we modify the start, we could
+                // break the sorting
+                endnode.length = new LogootInt(n_end_old.level(level)).sub(
+                  end.level(level)
                 ).js_int
-                n.length -= l
-
-                informRemoval(n, n.known_position, l, false)
-                n.known_position += l
+                if (endnode.length > 0) {
+                  addNode(endnode)
+                }
               }
             }
           }
@@ -806,68 +825,45 @@ class Document {
       const end = start.offsetLowest(r.length)
       // The level where our removal is happening (always the lowest)
       const level = start.levels
-      debug.log('REMOTE REMOVE', JSON.stringify(start), r.length)
+      debug.log('REMOTE REMOVE', start.toString(), r.length, rclk.toString())
 
-      let nodes = this.logoot_bst
-        .getRange({ start }, { start: end })
-        .map((n) => n.data)
-
-      let lesser = this.logoot_bst.getLteq({ start })
-      if (lesser.length > 1) {
-        throw new FatalError(
-          'Corrupt BST. There are multiple nodes at a position.'
-        )
-      } else {
-        lesser = lesser[0] ? lesser[0].data : undefined
-        if (lesser && lesser.end.cmp(start) > 0) {
-          nodes.push(lesser)
-        }
-      }
-      nodes = nodes
-        .sort((a, b) => a.start.cmp(b.start))
-        .filter((n) => rclk.cmp(n.rclk) > 0)
-
-      // Remove what we can just by clipping out nodes
-      nodes.forEach((n) => {
-        // The removal is only happening on `level` and others are left alone
-        if (n.start.levels !== level) {
-          return
-        }
-
-        const localstart = n.start.cmp(start) > 0 ? n.start : start
-        const localend = n.end.cmp(end) > 0 ? end : n.end
-        const length = new LogootInt(localend.level(level)).sub(
-          localstart.level(level)
-        ).js_int
-        const offset = new LogootInt(localstart.level(level)).sub(
-          n.start.level(level)
-        ).js_int
-
-        if (length <= 0) {
-          return
-        }
-
-        n.length -= length
-        this.removeLocal(n.known_position + offset, length)
-        this.ldoc_bst.operateOnAllGteq(
-          { known_position: n.known_position + offset },
-          (n) => {
-            n.data.known_position -= length
+      // This is basically the same as the invocation in remoteInsert, only it
+      // doesn't add the resulting nodes to anything
+      const nodes = this._mergeNode(
+        this.logoot_bst,
+        start,
+        r.length,
+        (node, conflict, lesser) => {
+          // TODO: Nodes with the SAME `rclk` should still have a removal added
+          // at their position because another node with the same `rclk` as the
+          // one just removed could show up.
+          if (node.rclk.cmp(rclk) <= 0) {
+            return -1
           }
-        )
-
-        if (n.length <= 0) {
-          this.logoot_bst.remove(n)
-          this.ldoc_bst.remove(n)
+          return 1
+        },
+        (node) => {
+          this.ldoc_bst.add(node)
+          this.logoot_bst.add(node)
+        },
+        (node, pos, length, whole) => {
+          if (whole) {
+            this.ldoc_bst.remove(node)
+            this.logoot_bst.remove(node)
+          }
+          this.removeLocal(pos, length)
+          this.ldoc_bst.operateOnAllGteq({ known_position: pos }, (n) => {
+            if (n === node) {
+              return
+            }
+            n.data.known_position -= length
+          })
         }
-      })
+      )
 
-      // This works like skip_ranges in the remoteInsert function above.
-      // We must also fill in the gaps of stuff that MIGHT one day be removed so
-      // that the addition process will skip that region should an event with
-      // a lower vector (removal) clock show up
-      // This is probably the mechanism that will be used to remove text most of
-      // the time anyway
+      // Now, use the text nodes that stay as `skip_ranges`, like in the
+      // `_mergeNode` function, to find where the removal should be added to the
+      // removal BST
       nodes.push({ start: end, end })
 
       // I've gotten lazier and lazier with variable names as this file has
@@ -877,6 +873,7 @@ class Document {
         const length = new LogootInt(n.end.level(level)).sub(
           last_end.level(level)
         ).js_int
+        // Now, merge this removal with possible other ones in the removal_bst
         const nodes = this._mergeNode(
           this.removal_bst,
           last_end,
@@ -897,6 +894,7 @@ class Document {
           }
         )
 
+        // Make sure the removals actually exist
         nodes.forEach((node) => {
           node.rclk = rclk
           delete node._offset

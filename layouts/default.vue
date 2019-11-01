@@ -87,5 +87,6 @@ html {
   position: fixed;
   top: 8px;
   left: 8px;
+  z-index: 100;
 }
 </style>

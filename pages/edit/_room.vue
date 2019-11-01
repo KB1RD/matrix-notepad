@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <div>
-      <a-drawer
+      <!-- <a-drawer
         :visible="setup_visible"
         title="Document Settings"
         placement="right"
@@ -9,7 +9,7 @@
         @close="closeMatrixSetup"
       >
         WIP
-      </a-drawer>
+      </a-drawer> -->
 
       <DebugPanel
         v-if="$store.state.debug"
@@ -60,8 +60,8 @@ export default {
 
   data() {
     return {
-      has_fatal_error: false,
-      setup_visible: false
+      has_fatal_error: false
+      // setup_visible: false
     }
   },
 
@@ -107,8 +107,8 @@ export default {
           }
         } catch (e) {
           console.error('Failed to open document', e)
-          self.$message.error('Failed to open document!')
-          self.has_fatal_error = true
+          this.$message.error('Failed to open document!')
+          this.has_fatal_error = true
         }
       })()
     )
@@ -126,9 +126,9 @@ export default {
           'Internal errors encountered. See console for details'
         )
       }
-    },
+    }
 
-    openMatrixSetup() {
+    /* openMatrixSetup() {
       this.setup_visible = true
     },
     closeMatrixSetup() {
@@ -136,7 +136,7 @@ export default {
       if (!this.signed_in) {
         this.$message.warning('Operation cancelled. You are not signed in')
       }
-    }
+    } */
   }
 }
 </script>

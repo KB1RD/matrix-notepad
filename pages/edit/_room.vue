@@ -28,7 +28,6 @@
         ref="editor"
         :loading="is_busy || is_reconnecting"
         @ready="cm_ready = true"
-        @settings-clicked="openMatrixSetup"
         @insert="(i) => (documentInsert ? documentInsert(i) : undefined)"
         @remove="(r) => (documentRemove ? documentRemove(r) : undefined)"
       />
@@ -64,15 +63,9 @@ export default {
       has_fatal_error: false,
       // setup_visible: false,
       cm_ready: false,
-      cm_resolve_ready: undefined
-    }
-  },
+      cm_resolve_ready: undefined,
 
-  watch: {
-    cm_ready() {
-      if (this.cm_ready && this.cm_resolve_ready) {
-        this.cm_resolve_ready()
-      }
+      document_symbol: undefined
     }
   },
 
@@ -86,6 +79,14 @@ export default {
     },
     is_reconnecting() {
       return this.$store.state.matrix.matrix_state === 'RECONNECTING'
+    }
+  },
+
+  watch: {
+    cm_ready() {
+      if (this.cm_ready && this.cm_resolve_ready) {
+        this.cm_resolve_ready()
+      }
     }
   },
 
@@ -113,6 +114,14 @@ export default {
             this.$refs.editor.remove,
             this.onDocumentError
           )
+
+          // This is a really stupid way to keep the document out of Vue's reach
+          Object.defineProperty(this, 'document', {
+            get() {
+              return doc
+            }
+          })
+
           this.documentInsert = ({ pos, body }) => doc.insert(pos, body)
           this.documentRemove = ({ pos, length }) => doc.remove(pos, length)
           this.fetchEvents = (n) => {
@@ -133,15 +142,20 @@ export default {
     )
   },
 
+  beforeDestroy() {
+    this.$matrix.shutdownDocument(this.document)
+  },
+
   methods: {
-    onDocumentError(e) {
+    onDocumentError(e, doc) {
       if (e.fatal) {
         console.error('Fatal internal error', e)
-        self.$message.error('Fatal internal error')
-        // self.$matrix.shutdown()
+        this.$message.error('Fatal internal error')
+        this.has_fatal_error = true
+        this.$matrix.shutdownDocument(doc)
       } else {
         console.warn('Internal error', e)
-        self.$message.warning(
+        this.$message.warning(
           'Internal errors encountered. See console for details'
         )
       }

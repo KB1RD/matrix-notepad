@@ -261,6 +261,11 @@ class Document {
   // incremented with each deletion only.
   vector_clock = new LogootInt(0)
 
+  // Used to keep track of active EventEmitter listeners having anything to do
+  // with this document
+  // TODO: Move this to a better place
+  _active_listeners = []
+
   last_insertation_event = undefined
 
   constructor(send, insertLocal, removeLocal) {

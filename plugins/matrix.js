@@ -157,7 +157,6 @@ export default ({ store }) => {
       onIns,
       onRem
     )
-    globals.doc = doc
 
     let new_msgs = 0
     const onNewEvent = (event) => {
@@ -179,7 +178,7 @@ export default ({ store }) => {
       }
     }
 
-    client.on('Room.timeline', (event, room, toStartOfTimeline, removed) => {
+    const onRoomTimeline = (event, room, toStartOfTimeline, removed) => {
       // Filter for events in the current room & with null status (status is
       // assigned only for local echos)
       // TODO: Add a filter to sync requests
@@ -190,9 +189,14 @@ export default ({ store }) => {
           if (e.critical) {
             client.stopClient()
           }
-          err(e)
+          err(e, doc)
         }
       }
+    }
+    client.on('Room.timeline', onRoomTimeline)
+    doc._active_listeners.push({
+      event: 'Room.timeline',
+      listener: onRoomTimeline
     })
 
     const room_obj = client.getRoom(room_id)
@@ -234,7 +238,7 @@ export default ({ store }) => {
           if (e.critical) {
             client.stopClient()
           }
-          err(e)
+          err(e, doc)
         }
       })
 
@@ -261,11 +265,15 @@ export default ({ store }) => {
   }
 
   globals.shutdown = () => {
-    globals.doc = undefined
     if (globals.client) {
       globals.client.stopClient()
       globals.client = undefined
     }
+  }
+  globals.shutdownDocument = (doc) => {
+    doc._active_listeners.forEach(({ event, listener }) => {
+      globals.client.off(event, listener)
+    })
   }
 
   Vue.prototype.$matrix = globals

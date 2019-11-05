@@ -3,6 +3,16 @@
     <div>
       <DebugPanel v-if="$store.state.debug" />
 
+      <a-button
+        type="dashed"
+        block
+        style="margin: 10px 0px;"
+        @click="$refs.modal.show()"
+      >
+        + Add
+      </a-button>
+      <AddRoomModal ref="modal" />
+
       <a-config-provider>
         <template v-slot:renderEmpty>
           <div style="text-align: center">
@@ -20,8 +30,6 @@
           </a-list-item>
         </a-list>
       </a-config-provider>
-      <a-button type="dashed" block @click="$refs.modal.show()">+ Add</a-button>
-      <AddRoomModal ref="modal" />
     </div>
   </div>
 </template>

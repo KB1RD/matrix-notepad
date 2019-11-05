@@ -3,10 +3,10 @@
     <a-icon slot="indicator" type="loading" style="font-size: 48px" spin />
 
     <a-card>
-      <template slot="actions" class="ant-card-actions">
+      <!-- <template slot="actions" class="ant-card-actions">
         <a-icon type="setting" @click="$emit('settings-clicked')" />
-        <!-- <a-icon type="share-alt" /> -->
-      </template>
+        <a-icon type="share-alt" />
+      </template> -->
       <a-card-meta title="Document" />
       <client-only placeholder="Codemirror Loading...">
         <codemirror

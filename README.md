@@ -1,7 +1,5 @@
-# Matrix Notepad
-> A buggy way to collaborate on text documents using the [Matrix](https://matrix.org) protocol. Consider this the Matrix Console of collaboration!
-
-![Screenshot](static/doc.png)
+![Matrix Notepad](static/logo/notepad%20logo.svg)
+> A buggy way to collaborate on text documents using the [Matrix](https://matrix.org) protocol. When it works, consider this the Matrix Console of collaboration!
 
 Check it out at [matrix-notepad.kb1rd.net](https://matrix-notepad.kb1rd.net/) and come chat at [#matrix-collaboration:kb1rd.net](https://matrix.to/#/!lJKzxfcqmWpRzHxAsh:kb1rd.net?via=matrix.org)! I'd love to hear about what you think (and what issues you encounter)!
 
@@ -14,30 +12,31 @@ This is not in any particular order:
 * [ ] Unit testing!!!
 * [ ] Create a different package for the `Logootish` algorithm
 * [ ] Node 'squashing' or similar. Currently Matrix Notepad has to sync ALL of the events :(
-* [ ] Text styling (making it a more fully-featured text editor)
+* [ ] Rich text editing
+
 In addition, I think it would be a good idea to discuss future possibilities for sharing more than just text over Matrix and the possibility of creating a unified 'app host' client that manages permissions for applications and allows the user to browse a directory structure.
 
+## Why write this?
+Fundementally, it is frustrating that there is no standard way to collaborate on the Internet. There are a bunch of systems to collaborate online, but they require that you trust a single company and, most of the time, have an account with that company. Just as Matrix was founded with the goal of making communication standardized just the way email is, this project was started with the goal of providing a proof-of-concept of how standardized collaboration could work over the Internet and over Matrix.
+
 ## Usage
-Open [matrix-notepad.kb1rd.net](https://matrix-notepad.kb1rd.net/). Currently, there's no proper sign in, so you sign in with your access token, which can be found under settings in Riot.im.
-![Setup](static/setup.png)
-Click the gear icon in Matrix Notepad. This will open up a sidebar for your settings. You'll need...
-* Your homeserver URL (In Riot.im, go to Settings -> About and scroll down)
-* An access token (In Riot.im, go to Settings -> About and scroll down)
-* A room, which you can create in Riot and then paste the ID into the field. Room aliases are supported
+Just head on over to [matrix-notepad.kb1rd.net](https://matrix-notepad.kb1rd.net/) and sign in. This will bring you to a room list. It's not a great idea to re-use rooms, so if you haven't joined a document room yet, click the "Add" button at the top of the room list and either create a room or join an existing one by ID or alias.
 
-Then, all you need to do is click "Sign In" and start typing! It is normal for signing in to take some time on busy homeservers because it has to run a sync request for all the messages in the room. Sorry for the horrible sign in UX!
+### WARNING!
+First of all, since this is experimental software, do not use it to store very important or confidential information. Second, I have recommended to some of the Matrix devs that they create another account to test this program. This program *shouldn't* do anything to break anyone's account -- I use it on my normal Matrix account and nothing bad has happened. Yet. I suggested that they use another account because their job depends upon a working account. If you *absolutely* need your Matrix account every day, I would recommend creating another account just to be safe. This program will:
+1.) Post a good number of events to whichever room you choose. If you use this to type out a novel or something, it may slow down Riot since sync requests get larger, but this shouldn't be too much of an issue
+2.) Scroll back as far as possible in whichever room you choose. For this reason, **do not** open public chats since the editor will try to sync back to the beginning of time and probably crash your browser. I'm working on a more efficient sync system. See issue #11
 
-## How it Works
-This program is based on the well-documented Logoot algorithm. This works by creating a unique ID for each "atom," or character, of text. Each client will then be able to sort the IDs from earliest to latest. Now, if these IDs are allocated sequentially and are all integers, we wouldn't be able to put anything in between them since there's no space between integers. The solution is to add another integer to basically create a new mini-document between the two nodes. This is really confusing at first, so here's an example: Let's say that first I insert `a` at [0] and `c` at [1], but I want to insert `b` between them. I would then give `b` the position [0, 0]. This is just a short and poorly written overview and I'd encourage you to read the [Logoot paper](https://hal.archives-ouvertes.fr/inria-00432368/document) if you're interested!
-### So, what is 'Logootish'?
-If you read the name of the algorithm in the `algorithms` directory, you'll see that my algorithm is titled `logootish`. In order to make Logoot perform the best for my particular application, I did modify a few things, hence the different name.
-* First, Logoot calls for a peer ('site') ID that is used to determine which node comes first in case two peers insert text at the same position. I did not include this. Consider what happens if the network between two homeservers stops working. Alice inserts `test` and Bob inserts `hello`. Each position would be allocated sequentially, with site ID being used to determine position in case of a conflict. Because of this, assuming I'm understanding how the algorithm works correctly, the resulting text would be `theesltlo`. This, for me, is not desired behavior in a conflict since I want the algorithm to handle larger partitions. I would rather that the algorithm prompted the user and had the user decide how they would like the document, rather than introducing confusing changes. **At the moment, I have not written the conflict resolution code. Other than getting bugs out of the existing code, this is at the top of my priority list!**
-* Second, Logoot treats each atom as a seperate entity. If I made each atom a seperate Matrix event, the algorithm would be *incredibly* inefficient. So, each event contains both a starting position and a **string** body. The ending position is determined by taking the lowest integer in the position array, (ex, [1, 0, **0**]) and adding the body length to it (ex, [1, 0, **5**], assuming the `body` has a length of 5). This saves many events and memory when typing consecutive text! Most Logoot implementations have something like this.
-## Why did I choose what I chose?
-* I chose Logoot because it is simple to implement and works well in situations with out-of-order events
-* I chose a web app not because I like JavaScript (I don't), but because it's most accessable
-* I chose to use Vue.JS because I feel that it makes building intuitive UIs faster. The UI is trash right now, but that will change
-* I chose to write my own Logoot algorithm because while there are others, I wanted one that could handle these groups of atoms (which are called `nodes` in my code). The Logoot algorithm that I wrote is much longer than others because it has to deal with merging these lists of nodes together
+### Bug Reporting
+If you see error messages pop up or you encounter any bugs, **please** report it either on GitHub or on the Matrix chat. This is **very** helpful as I'm sure there are bugs that I don't know about.
+
+## Screenshots
+![Sign in](static/signin.png)
+![Room List](static/roomlist.png)
+![Document Editing](static/document.png)
+
+## Contributing
+Have a look at the [Wiki](https://github.com/KB1RD/matrix-notepad/wiki) if you're interested in contributing. The wiki also contains documentation about how this works.
 
 ## Organization
 Here is the directory structure
@@ -59,11 +58,14 @@ Here is the directory structure
 
 ``` bash
 # install dependencies
-$ npm i
+$ yarn install
 
 # serve with hot reload at localhost:3000 (for development)
-$ npm run dev
+$ yarn run dev
 
 # generate static site
-$ npm run generate
+$ yarn run generate
+
+# get webpack bundle statistics
+$ yarn run stats
 ```

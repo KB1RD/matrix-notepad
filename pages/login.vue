@@ -129,7 +129,7 @@
           </a-col>
         </a-row>
 
-        <a-row :gutter="16" justify="end">
+        <!-- <a-row :gutter="16" justify="end">
           <a-col style="text-align: right;">
             <a-button type="link">What's this?</a-button>
           </a-col>
@@ -138,7 +138,7 @@
           <a-col style="text-align: right;">
             <a-button type="link">Register</a-button>
           </a-col>
-        </a-row>
+        </a-row> -->
 
         <a-row :gutter="16">
           <a-col>

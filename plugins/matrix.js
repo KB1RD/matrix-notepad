@@ -160,6 +160,12 @@ export default ({ store }) => {
     let new_msgs = 0
     const onNewEvent = (event) => {
       new_msgs += 1
+
+      // Remote events do not have status
+      if (event.status) {
+        return
+      }
+
       switch (event.getType()) {
         case namespace + '.ins':
           if (store.getters['debugstate/shouldBreak']('RI')) {
@@ -181,7 +187,7 @@ export default ({ store }) => {
       // Filter for events in the current room & with null status (status is
       // assigned only for local echos)
       // TODO: Add a filter to sync requests
-      if (room.roomId === room_id && !event.status && !removed) {
+      if (room.roomId === room_id && !removed) {
         try {
           onNewEvent(event)
         } catch (e) {

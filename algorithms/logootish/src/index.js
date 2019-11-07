@@ -345,6 +345,9 @@ class Document {
         .catch((e) => {
           event.state = EventState.PENDING
           // TODO: Nothing is here *should* be Matrix specific
+          if (e.event) {
+            e.event.flagCancelled()
+          }
           if (e && e.data && e.data.retry_after_ms) {
             if (
               event.type === EventType.INSERTATION &&
@@ -724,7 +727,6 @@ class Document {
     if (typeof body !== 'string') {
       throw new TypeError('Corrupt insertation event')
     }
-    console.log(event_contents)
     const nstart = new LogootPosition(0).fromEvent(event_contents.start)
     const this_rclk = new LogootInt(event_contents.rclk)
     debug.debug('REMOTE INSERT', body, nstart.toString(), this_rclk.toString())

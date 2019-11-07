@@ -1,3 +1,5 @@
+import { setDebugState } from '@/plugins/debug.js'
+
 export const state = () => ({
   // Examples of blocking promises are user signin. The user cannot do anything
   // while this is completed.
@@ -24,6 +26,7 @@ export const mutations = {
 
   setDebugEnabled(state, enabled) {
     state.debug = Boolean(enabled)
+    setDebugState(enabled)
   }
 }
 

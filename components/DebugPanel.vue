@@ -46,9 +46,9 @@
       <a-col :span="6">
         <a-form-item label="Dump BST">
           <a-button-group>
-            <a-button @click="dumpLogoot">Logoot</a-button>
-            <a-button @click="dumpLdoc">Ldoc</a-button>
-            <a-button @click="dumpRemoval">Removal</a-button>
+            <a-button @click="$emit('dumpLogoot')">Logoot</a-button>
+            <a-button @click="$emit('dumpLdoc')">Ldoc</a-button>
+            <a-button @click="$emit('dumpRemoval')">Removal</a-button>
           </a-button-group>
         </a-form-item>
       </a-col>
@@ -60,7 +60,7 @@
 // Not having console statements defeats the purpose of this. The debugger is
 // something intended for use by experienced users, so use of console and
 // debugger statements is fine since they will be expecting it
-/* eslint-disable no-console */
+
 export default {
   props: {
     cansync: Boolean
@@ -87,24 +87,6 @@ export default {
           value: 'RR'
         }
       ]
-    }
-  },
-
-  methods: {
-    dumpLogoot() {
-      if (this.$matrix.doc) {
-        console.log(this.$matrix.doc.logoot_bst.toString())
-      }
-    },
-    dumpLdoc() {
-      if (this.$matrix.doc) {
-        console.log(this.$matrix.doc.ldoc_bst.toString())
-      }
-    },
-    dumpRemoval() {
-      if (this.$matrix.doc) {
-        console.log(this.$matrix.doc.removal_bst.toString())
-      }
     }
   }
 }

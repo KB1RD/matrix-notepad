@@ -2,7 +2,7 @@ import { Enum, arraymap, FatalError } from './utils'
 import { Int32 } from './ints'
 import { Bst } from './bst'
 
-import { debug } from '@/plugins/debug'
+import { debug } from './debug'
 
 // What a C++ typedef would do
 // This makes it possible to completely swap out the type of the int used in the
@@ -350,17 +350,17 @@ class Document {
               event.type === EventType.INSERTATION &&
               self._tryMergeEvents(event)
             ) {
-              console.warn(
+              debug.warn(
                 `Hitting the rate limit: Will resend in ${e.data.retry_after_ms} ms with multiple messages merged together`
               )
               return {}
             }
-            console.warn(
+            debug.warn(
               `Hitting the rate limit: Will resend in ${e.data.retry_after_ms} ms`
             )
             setTimeout(queue_send, e.data.retry_after_ms)
           } else {
-            console.error('Error sending event', e)
+            debug.error('Error sending event', e)
             return e
           }
         })
@@ -369,7 +369,7 @@ class Document {
   }
 
   insert(position, text) {
-    debug.log('INSERT', position, text)
+    debug.debug('INSERT', position, text)
 
     // The position must be -1 for lesser because it can't count the text node
     // currently in the insertation position (we're between two nodes)
@@ -450,7 +450,7 @@ class Document {
   }
 
   remove(position, length) {
-    debug.log('REMOVE', position, length)
+    debug.debug('REMOVE', position, length)
 
     // First, find any nodes that MAY have content removed from them
     const nodes = this.ldoc_bst
@@ -724,13 +724,14 @@ class Document {
     if (typeof body !== 'string') {
       throw new TypeError('Corrupt insertation event')
     }
+    console.log(event_contents)
     const nstart = new LogootPosition(0).fromEvent(event_contents.start)
     const this_rclk = new LogootInt(event_contents.rclk)
-    debug.log('REMOTE INSERT', body, nstart.toString(), this_rclk.toString())
+    debug.debug('REMOTE INSERT', body, nstart.toString(), this_rclk.toString())
 
     if (this_rclk.cmp(this.vector_clock) > 0) {
       this.vector_clock = this_rclk
-      debug.log('Fast-forward vector clock to', JSON.stringify(this_rclk))
+      debug.info('Fast-forward vector clock to', JSON.stringify(this_rclk))
     }
 
     const nodes = this._mergeNode(
@@ -750,7 +751,7 @@ class Document {
           // I really don't like the idea of pushing this until after initial
           // release, but oh well.
           // Also, does this even work?
-          debug.warn('Dropped conflicting node')
+          debug.info('Dropped conflicting node')
         }
         return 1
       },
@@ -822,7 +823,7 @@ class Document {
     const rclk = new LogootInt(event_contents.rclk)
     if (rclk.cmp(this.vector_clock) > 0) {
       this.vector_clock = rclk
-      debug.log('Fast-forward vector clock to', JSON.stringify(rclk))
+      debug.info('Fast-forward vector clock to', JSON.stringify(rclk))
     }
 
     event_contents.removals.forEach((r) => {
@@ -830,7 +831,7 @@ class Document {
       const end = start.offsetLowest(r.length)
       // The level where our removal is happening (always the lowest)
       const level = start.levels
-      debug.log('REMOTE REMOVE', start.toString(), r.length, rclk.toString())
+      debug.debug('REMOTE REMOVE', start.toString(), r.length, rclk.toString())
 
       // This is basically the same as the invocation in remoteInsert, only it
       // doesn't add the resulting nodes to anything
@@ -912,4 +913,12 @@ class Document {
   }
 }
 
-export { EventType, Document }
+export {
+  EventType,
+  EventState,
+  Document,
+  InsertationEvent,
+  RemovalEvent,
+  LogootNode,
+  LogootPosition
+}

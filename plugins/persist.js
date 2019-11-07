@@ -1,6 +1,8 @@
 import Vue from 'vue'
 import VuexPersistence from 'vuex-persist'
 
+import { debug, setDebugState } from '@/plugins/debug'
+
 export default ({ store }) => {
   const callbacks = []
   let storeReady = false
@@ -18,11 +20,12 @@ export default ({ store }) => {
       })
     }).plugin(store)
     storeReady = true
+    setDebugState(store.state.debug)
     callbacks.forEach((cb) => {
       try {
         cb()
       } catch (e) {
-        console.error(e)
+        debug.error(e)
       }
     })
   })

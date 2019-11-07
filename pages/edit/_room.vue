@@ -15,6 +15,9 @@
         v-if="$store.state.debug"
         cansync
         @fetch="(n) => (fetchEvents ? fetchEvents(n) : undefined)"
+        @dumpLogoot="dumpLogoot"
+        @dumpLdoc="dumpLdoc"
+        @dumpRemoval="dumpRemoval"
       />
 
       <div style="margin: 10px 0px; text-align: left;">
@@ -42,6 +45,7 @@
 </template>
 
 <script>
+import { debug } from '@/plugins/debug'
 import DebugPanel from '@/components/DebugPanel'
 import DocumentEditor from '@/components/DocumentEditor'
 
@@ -130,11 +134,11 @@ export default {
               .then(() => this.$message.info('Sync complete'))
               .catch((e) => {
                 this.$message.error('Sync failed')
-                console.error(e)
+                debug.error(e)
               })
           }
         } catch (e) {
-          console.error('Failed to open document', e)
+          debug.error('Failed to open document', e)
           this.$message.error('Failed to open document!')
           this.has_fatal_error = true
         }
@@ -143,21 +147,39 @@ export default {
   },
 
   beforeDestroy() {
-    this.$matrix.shutdownDocument(this.document)
+    if (this.document) {
+      this.$matrix.shutdownDocument(this.document)
+    }
   },
 
   methods: {
     onDocumentError(e, doc) {
       if (e.fatal) {
-        console.error('Fatal internal error', e)
+        debug.error('Fatal internal error', e)
         this.$message.error('Fatal internal error')
         this.has_fatal_error = true
         this.$matrix.shutdownDocument(doc)
       } else {
-        console.warn('Internal error', e)
+        debug.warn('Internal error', e)
         this.$message.warning(
           'Internal errors encountered. See console for details'
         )
+      }
+    },
+
+    dumpLogoot() {
+      if (this.document) {
+        debug.info(this.document.logoot_bst.toString())
+      }
+    },
+    dumpLdoc() {
+      if (this.document) {
+        debug.info(this.document.ldoc_bst.toString())
+      }
+    },
+    dumpRemoval() {
+      if (this.document) {
+        debug.info(this.document.removal_bst.toString())
       }
     }
 

@@ -160,6 +160,7 @@
 <script>
 import { mapMutations } from 'vuex'
 import { SimpleSVG } from 'vue-simple-svg'
+import { debug } from '@/plugins/debug'
 
 export default {
   layout: 'gradient-bg-full',
@@ -241,7 +242,7 @@ export default {
             self.setup_visible = false
             self.redirect()
           } catch (e) {
-            console.error('Failed to sign in', e)
+            debug.error('Failed to sign in', e)
             self.$message.error('Failed to sign in!')
           }
           hide()

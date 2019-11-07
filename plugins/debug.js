@@ -1,42 +1,20 @@
 import Vue from 'vue'
+import loglevel from 'loglevel'
 
-/*
- * This is a really sketchy thing I threw together last minute to enable and
- * disable debug
- */
+const debug = loglevel.getLogger('matrix-notepad')
 
-/* eslint-disable no-console */
-
-const debug = {
-  store: undefined,
-  checkStore() {
-    return this.store && this.store.state.debug
-  },
-
-  log(...args) {
-    if (!this.checkStore()) {
-      return
-    }
-    console.log(...args)
-  },
-  warn(...args) {
-    if (!this.checkStore()) {
-      return
-    }
-    console.warn(...args)
-  },
-  error(...args) {
-    if (!this.checkStore()) {
-      return
-    }
-    console.error(...args)
-  }
+const setDebugState = (state = false) => {
+  const loggers = loglevel.getLoggers()
+  Object.keys(loggers).forEach((key) => {
+    loggers[key].setLevel(state ? 0 : 2, false)
+  })
 }
 
 export default ({ store }) => {
   debug.store = store
 
   Vue.prototype.$debug = debug
+  window.$debug = debug
 }
 
-export { debug }
+export { debug, setDebugState }

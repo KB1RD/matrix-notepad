@@ -1,10 +1,9 @@
 import Vue from 'vue'
 import sdk from 'matrix-js-sdk'
 import axios from 'axios'
+import { EventType, Document } from 'logootish-js'
 
 import { debug } from '@/plugins/debug'
-
-import { EventType, Document } from '@/algorithms/logootish'
 
 const namespace = 'net.kb1rd.logootish-0'
 
@@ -108,7 +107,7 @@ export default ({ store }) => {
       '/account/whoami',
       {}
     )
-    debug.log(`Found user ID of ${mxid.user_id}`)
+    debug.info(`Found user ID of ${mxid.user_id}`)
 
     client = sdk.createClient({
       baseUrl: hs,

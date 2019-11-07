@@ -118,6 +118,8 @@
 </template>
 
 <script>
+import { debug } from '@/plugins/debug'
+
 export default {
   data() {
     return {
@@ -161,7 +163,7 @@ export default {
               }
             },
             (e) => {
-              console.error('Failed to create room', e)
+              debug.error('Failed to create room', e)
               this.$message.error('Failed to create room!')
             }
           )
@@ -182,7 +184,7 @@ export default {
               }
             },
             (e) => {
-              console.error('Failed to join room', e)
+              debug.error('Failed to join room', e)
               this.$message.error('Failed to join room!')
             }
           )

@@ -820,9 +820,10 @@ class Document {
 
   remoteRemove(event_contents) {
     const rclk = new LogootInt(event_contents.rclk)
-    if (rclk.cmp(this.vector_clock) > 0) {
-      this.vector_clock = rclk
-      debug.info('Fast-forward vector clock to', JSON.stringify(rclk))
+    const new_rclk = new LogootInt(rclk).add(1)
+    if (new_rclk.cmp(this.vector_clock) > 0) {
+      this.vector_clock = new_rclk
+      debug.info('Fast-forward vector clock to', JSON.stringify(new_rclk))
     }
 
     event_contents.removals.forEach((r) => {

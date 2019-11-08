@@ -669,22 +669,12 @@ class Document {
     let last_end = nstart
     let last_known_position = known_start
     skip_ranges.forEach((skip_range) => {
-      const { start, end } = skip_range
+      const { start, end, length } = skip_range
       // Clamped regions to consider. Anything outside of the node to be
       // inserted doesn't matter, so we clamp it out
       // Of course, that means we have to recalculate EVERYTHING *sigh*
-      const cstart = start.clamp(
-        nstart.equivalentPositionAtLevel(start.levels),
-        nend.equivalentPositionAtLevel(start.levels)
-      )
-      const cend = end.clamp(
-        nstart.equivalentPositionAtLevel(end.levels),
-        nend.equivalentPositionAtLevel(end.levels)
-      )
-      const clevel = cstart.levels
-      const clength = new LogootInt(cend.level(clevel)).sub(
-        cstart.level(clevel)
-      ).js_int
+      const cstart = start.equivalentPositionAtLevel(level).clamp(nstart, nend)
+      const cend = end.equivalentPositionAtLevel(level).clamp(nstart, nend)
 
       const node = new LogootNode()
       // Find the new node length by finding the distance between the last end
@@ -697,7 +687,7 @@ class Document {
       if (node.length <= 0) {
         last_end = cend
         if (skip_range !== lesser) {
-          last_known_position += clength
+          last_known_position += length
         }
         return
       }
@@ -715,7 +705,14 @@ class Document {
       last_end = cend
       last_known_position += node.length
       if (skip_range !== lesser) {
-        last_known_position += clength
+        // When incrementing the known_position, we ALWAYS use the length of
+        // the whole node since we will have to skip over the node regardless
+        // of how much of it actually concerns the node being added
+        // For example, if we're adding a node around an existing node with a
+        // greater number of levels, it will have the length of zero on our
+        // current level (because it is between two positions), but we still
+        // MUST skip over its entire non-zero length
+        last_known_position += length
       }
     })
     return newnodes

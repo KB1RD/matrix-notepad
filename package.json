@@ -1,6 +1,5 @@
 {
   "name": "matrix-notepad",
-  "sideEffects": false,
   "version": "0.1.4",
   "description": "Store & collaborate on text files over the Matrix protocol",
   "author": "Nathan Pennie",

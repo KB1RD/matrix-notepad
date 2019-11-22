@@ -1,11 +1,11 @@
 ![Matrix Notepad](static/logo/notepad%20logo.svg)
 > A buggy way to collaborate on text documents using the [Matrix](https://matrix.org) protocol. When it works, consider this the Matrix Console of collaboration!
 
-Check it out at [matrix-notepad.kb1rd.net](https://matrix-notepad.kb1rd.net/) and come chat at [#matrix-collaboration:kb1rd.net](https://matrix.to/#/!lJKzxfcqmWpRzHxAsh:kb1rd.net?via=matrix.org)! I'd love to hear about what you think (and what issues you encounter)!
+Check it out at [matrix-notepad.kb1rd.net](https://matrix-notepad.kb1rd.net/) and come chat at [#matrix-collaboration:kb1rd.net](https://matrix.to/#/#matrix-collaboration:kb1rd.net?via=kb1rd.net&via=matrix.org&via=matrix.geklautecloud.de)! I'd love to hear about what you think (and what issues you encounter)!
 
 ## Brief Roadmap
 This is not in any particular order:
-* [x] More or less working insertations
+* [x] More or less working insertions
 * [x] More or less working removals
 * [ ] Conflict resolution
 * [ ] Improved UI/UX (this will be incremental)
@@ -36,7 +36,7 @@ If you see error messages pop up or you encounter any bugs, **please** report it
 ![Document Editing](static/document.png)
 
 ## Contributing
-Have a look at the [Wiki](https://github.com/KB1RD/matrix-notepad/wiki) if you're interested in contributing. The wiki also contains documentation about how this works.
+Have a look at the [Wiki](https://github.com/KB1RD/matrix-notepad/wiki) if you're interested in contributing. I'd love the help! The wiki also contains documentation about how the algorithm, `logootish-js`, works internally as well as links to the JSDoc.
 
 ## Organization
 Here is the directory structure
@@ -55,7 +55,6 @@ Here is the directory structure
 * `test` -- A directory that I have reserved for unit testing. This would help **a lot** if I actually implemented it. *sigh*
 
 ## Build Setup
-
 ``` bash
 # install dependencies
 $ yarn install
@@ -68,4 +67,24 @@ $ yarn run generate
 
 # get webpack bundle statistics
 $ yarn run stats
+```
+
+Also, if you want to debug the core algorithm, `logootish-js`, see https://github.com/KB1RD/logootish-js . If you want to test it with the Notepad, the `yarn link` setup process is as follows:
+``` bash
+# get logootish-js
+$ git clone https://github.com/KB1RD/logootish-js.git
+$ cd logootish-js
+
+# install dependencies & build
+logootish-js$ yarn install
+logootish-js$ yarn run build
+
+# link to yarn
+logootish-js$ yarn link
+
+# switch to the notepad
+logootish-js$ cd ../matrix-notepad
+
+# link logootish-js
+matrix-notepad$ yarn link logootish-js
 ```

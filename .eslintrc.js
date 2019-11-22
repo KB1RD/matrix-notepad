@@ -17,8 +17,12 @@ module.exports = {
   plugins: [
     'prettier'
   ],
-  // add your custom rules here
   rules: {
-    camelcase: 'off'
+    // See https://github.com/KB1RD/matrix-notepad/wiki/Program-Organization
+    camelcase: 'off',
+    // I want the ability to order attributes as I see fit. For example, I
+    // think it makes sense to put the 'title' attribute of a panel first
+    // to improve readability.
+    'vue/attributes-order': 'off'
   }
 }

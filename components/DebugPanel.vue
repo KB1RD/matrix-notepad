@@ -71,7 +71,7 @@ export default {
       syncdepth: 1,
       breakpoint_options: [
         {
-          label: 'Local insertation events',
+          label: 'Local insertion events',
           value: 'LI'
         },
         {
@@ -79,7 +79,7 @@ export default {
           value: 'LR'
         },
         {
-          label: 'Remote insertation events',
+          label: 'Remote insertion events',
           value: 'RI'
         },
         {

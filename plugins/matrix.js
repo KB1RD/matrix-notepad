@@ -37,13 +37,15 @@ export default ({ store }) => {
     const isync_filter = await client.createFilter({
       room: {
         timeline: {
-          limit: 1,
+          limit: 50,
           types: [
             'm.room.create',
             'm.room.name',
             'm.room.topic',
             'm.room.avatar',
-            'm.room.aliases'
+            'm.room.aliases',
+            insert_event,
+            remove_event
           ]
         },
         state: {
@@ -273,7 +275,7 @@ export default ({ store }) => {
         if (n - replay_events.length - new_msgs > 0) {
           // If we need even more, fetch some using forward pagination
           await client.paginateEventTimeline(room_obj.getLiveTimeline(), {
-            backwards: true,
+            backwards: false,
             limit: n - replay_events.length - new_msgs
           })
         }

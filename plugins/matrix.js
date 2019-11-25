@@ -30,7 +30,42 @@ export default ({ store }) => {
     globals.client = client
     window.mx_client = client
 
-    await client.startClient({ initialSyncLimit: 0 }).catch((e) => {
+    // Initial sync is only used to grab the room list. Additional sync requests
+    // are made to the document-rooms as necessary
+    const isync_filter = await client.createFilter({
+      room: {
+        timeline: {
+          limit: 1,
+          types: ['m.room.create']
+        },
+        state: {
+          types: [
+            'm.room.name',
+            'm.room.topic',
+            'm.room.avatar',
+            'm.room.aliases'
+          ]
+        },
+        ephemeral: {
+          limit: 0,
+          types: []
+        },
+        account_data: {
+          limit: 0,
+          types: []
+        }
+      },
+      presence: {
+        limit: 0,
+        types: []
+      },
+      account_data: {
+        limit: 0,
+        types: []
+      }
+    })
+
+    await client.startClient({ filter: isync_filter }).catch((e) => {
       client.stopClient()
       throw e
     })

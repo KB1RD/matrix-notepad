@@ -6,6 +6,8 @@ import { EventType, Document } from 'logootish-js'
 import { debug } from '@/plugins/debug'
 
 const namespace = 'net.kb1rd.logootish-0'
+const insert_event = namespace + '.ins'
+const remove_event = namespace + '.rem'
 
 export default ({ store }) => {
   const globals = {}
@@ -36,10 +38,17 @@ export default ({ store }) => {
       room: {
         timeline: {
           limit: 1,
-          types: ['m.room.create']
+          types: [
+            'm.room.create',
+            'm.room.name',
+            'm.room.topic',
+            'm.room.avatar',
+            'm.room.aliases'
+          ]
         },
         state: {
           types: [
+            'm.room.create',
             'm.room.name',
             'm.room.topic',
             'm.room.avatar',
@@ -170,22 +179,20 @@ export default ({ store }) => {
     const doc = new Document(
       (data) => {
         switch (data.type) {
-          case EventType.INSERTATION:
+          case EventType.INSERTION:
             if (store.getters['debugstate/shouldBreak']('LI')) {
               // eslint-disable-next-line
               debugger
             }
-            return client.sendEvent(room_id, namespace + '.ins', data, '')
+            return client.sendEvent(room_id, insert_event, data.toJSON(), '')
           case EventType.REMOVAL:
             if (store.getters['debugstate/shouldBreak']('LR')) {
               // eslint-disable-next-line
               debugger
             }
-            return client.sendEvent(room_id, namespace + '.rem', data, '')
+            return client.sendEvent(room_id, remove_event, data.toJSON(), '')
           default:
-            return new Promise((resolve, reject) =>
-              reject(new Error('Invalid event type'))
-            )
+            return Promise.reject(new Error('Invalid event type'))
         }
       },
       onIns,
@@ -196,20 +203,20 @@ export default ({ store }) => {
     const onNewEvent = (event) => {
       new_msgs += 1
 
-      // Remote events do not have status
-      if (event.status) {
+      // Local echos will read as 'sending'
+      if (event.status === 'sending') {
         return
       }
 
       switch (event.getType()) {
-        case namespace + '.ins':
+        case insert_event:
           if (store.getters['debugstate/shouldBreak']('RI')) {
             // eslint-disable-next-line
             debugger
           }
           doc.remoteInsert(event.event.content)
           return
-        case namespace + '.rem':
+        case remove_event:
           if (store.getters['debugstate/shouldBreak']('RR')) {
             // eslint-disable-next-line
             debugger

@@ -15,7 +15,7 @@
           style="text-align: left; margin: -24px -32px; margin-top: 3em; overflow: auto;"
           :options="cmOption"
           @ready="$emit('ready')"
-          @changes="onNewChanges"
+          @beforeChange="onNewChanges"
         />
       </client-only>
     </a-card>
@@ -32,6 +32,7 @@ export default {
 
   data() {
     return {
+      console,
       text: '',
 
       cmOption: {
@@ -73,63 +74,52 @@ export default {
 
       cmdoc.replaceRange('', startpos, endpos)
     },
+    translate(src, dest, len) {
+      const cmdoc = this.$refs.codemirror.codemirror.doc
+      debug.log(`TRANSLATE ${len} CHARS FROM ${src} -> ${dest}`)
+      const startpos = cmdoc.posFromIndex(src)
+      const endpos = cmdoc.posFromIndex(src + len)
+      const body = cmdoc.getRange(startpos, endpos)
+      this.remove(src, len)
+      this.insert(dest, body)
+    },
 
-    onNewChanges(cm, changes) {
+    onNewChanges(cm, change) {
       const line_seperator = '\n'
-      const modifyCmLinePositionBasedOnText = (to, text) => {
-        // Add the extra lines in to the line count
-        to.line += text.length - 1
-        // If there's a new line, go back to the start of the line
-        if (text.length > 1) {
-          to.ch = 0
+      // TODO: Possible create a custom CM document to fix this BS. That way,
+      // text appears as part of the local echo of a Matrix event
+      if (
+        this.changes_to_ignore[change.from.line] &&
+        this.changes_to_ignore[change.from.line].includes(change.from.ch)
+      ) {
+        this.changes_to_ignore[change.from.line].pop(change.from.ch)
+        if (!this.changes_to_ignore[change.from.line].length) {
+          delete this.changes_to_ignore[change.from.line]
         }
-        // Add the final line position
-        to.ch += text[text.length - 1].length
-
-        return to
+        return
       }
 
-      changes.forEach((change) => {
-        // TODO: Possible create a custom CM document to fix this BS. That way,
-        // text appears as part of the local echo of a Matrix event
-        if (
-          this.changes_to_ignore[change.from.line] &&
-          this.changes_to_ignore[change.from.line].includes(change.from.ch)
-        ) {
-          this.changes_to_ignore[change.from.line].pop(change.from.ch)
-          if (!this.changes_to_ignore[change.from.line].length) {
-            delete this.changes_to_ignore[change.from.line]
-          }
-          return
-        }
+      // Local echos will replay the change
+      change.cancel()
 
-        const from = Object.assign({}, change.from)
-        const from_index = cm.indexFromPos(from)
+      const from = Object.assign({}, change.from)
+      const from_index = cm.indexFromPos(from)
+      const to = Object.assign({}, change.to)
+      const to_index = cm.indexFromPos(to)
 
-        // Addition is in the post-removal coordinate system
-        const addition_to = Object.assign({}, change.from)
+      // Length of removal
+      const removal_length = to_index - from_index
 
-        // Update based on actual values (in my experience, CM reports incorrect
-        // lengths in *some* cases, so this just starts from scratch)
-        modifyCmLinePositionBasedOnText(addition_to, change.text)
+      // Raw text of the addition
+      const addition_raw = change.text.join(line_seperator)
 
-        // Length of removal. Start w/ the newline chars:
-        let removal_length = change.removed.length - 1
-        change.removed.forEach((str) => {
-          removal_length += str.length
-        })
+      if (removal_length) {
+        this.$emit('remove', { pos: from_index, length: removal_length })
+      }
 
-        // Raw text of the addition
-        const addition_raw = change.text.join(line_seperator)
-
-        if (removal_length) {
-          this.$emit('remove', { pos: from_index, length: removal_length })
-        }
-
-        if (addition_raw.length) {
-          this.$emit('insert', { pos: from_index, body: addition_raw })
-        }
-      })
+      if (addition_raw.length) {
+        this.$emit('insert', { pos: from_index, body: addition_raw })
+      }
     }
   }
 }

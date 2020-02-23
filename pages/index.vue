@@ -1,8 +1,6 @@
 <template>
   <div class="container">
     <div>
-      <DebugPanel v-if="$store.state.debug" />
-
       <a-button
         type="dashed"
         block
@@ -35,11 +33,10 @@
 </template>
 
 <script>
-import DebugPanel from '@/components/DebugPanel'
 import AddRoomModal from '@/components/AddRoomModal'
 
 export default {
-  components: { DebugPanel, AddRoomModal },
+  components: { AddRoomModal },
 
   computed: {
     rooms() {

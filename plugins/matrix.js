@@ -1,13 +1,287 @@
+/**
+ * Ok, code quality in here is an absolute mess. I plan to re-write most of this
+ * anyway. This file sets up Matrix and provides the interface between Matrix,
+ * the algorithm, and the GUI.
+ * @author Nathan Pennie <kb1rd@kb1rd.net>
+ */
+
 import Vue from 'vue'
 import sdk from 'matrix-js-sdk'
 import axios from 'axios'
-import { EventType, Document } from 'logootish-js'
+import {
+  ListDocumentModel,
+  LogootPosition,
+  LogootInt,
+  EventState
+} from 'logootish-js'
+import { validate } from 'jsonschema'
 
 import { debug } from '@/plugins/debug'
 
 const namespace = 'net.kb1rd.logootish-0'
 const insert_event = namespace + '.ins'
 const remove_event = namespace + '.rem'
+
+const namespace_lg1 = 'net.kb1rd.logootish-1'
+
+/**
+ * A mapping of MXIDs and custom-branches (NYI) to symbols for the algo
+ */
+class MatrixSymbolTable {
+  mxid_table = {}
+  br_mxid_table = {}
+  symbol_table = {}
+
+  lookupById(mxid, branch) {
+    if (this.branch) {
+      if (!this.br_mxid_table[branch]) {
+        this.br_mxid_table[branch] = {}
+      }
+      if (!this.br_mxid_table[branch][mxid]) {
+        this.br_mxid_table[branch][mxid] = Symbol(`BRANCH/${branch}/${mxid}`)
+        this.symbol_table[this.br_mxid_table[branch][mxid]] = { mxid, branch }
+      }
+      return this.br_mxid_table[branch][mxid]
+    } else {
+      if (!this.mxid_table[mxid]) {
+        this.mxid_table[mxid] = Symbol(`BRANCH/${mxid}`)
+        this.symbol_table[this.mxid_table[mxid]] = { mxid }
+      }
+      return this.mxid_table[mxid]
+    }
+  }
+
+  lookupBySymbol(symbol) {
+    return this.symbol_table[symbol]
+  }
+}
+
+class InsertionEvent {
+  state = EventState.PENDING
+  constructor(body, start, rclk) {
+    this.body = body
+    this.start = start
+    this.rclk = rclk
+  }
+
+  get end() {
+    return this.start.offsetLowest(this.body.length)
+  }
+
+  toJSON() {
+    return {
+      start: this.start.toJSON(),
+      rclk: this.rclk.toJSON(),
+      body: this.body
+    }
+  }
+}
+InsertionEvent.JSON = {}
+InsertionEvent.JSON.Schema = {
+  type: 'object',
+  properties: {
+    body: { type: 'string' },
+    start: LogootPosition.JSON.Schema,
+    rclk: LogootInt.JSON.Schema
+  },
+  required: ['body', 'start', 'rclk']
+}
+
+class RemovalEvent {
+  state = EventState.PENDING
+  constructor(removals, rclk) {
+    this.removals = removals
+    this.rclk = rclk
+  }
+
+  toJSON() {
+    return {
+      removals: this.removals.map(({ start, length }) => ({
+        start: start.toJSON(),
+        length
+      })),
+      rclk: this.rclk.toJSON()
+    }
+  }
+}
+RemovalEvent.JSON = {}
+RemovalEvent.JSON.Schema = {
+  type: 'object',
+  properties: {
+    removals: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          start: LogootPosition.JSON.Schema,
+          length: { type: 'number' }
+        },
+        required: ['start', 'length']
+      }
+    },
+    rclk: LogootInt.JSON.Schema
+  },
+  required: ['removals', 'rclk']
+}
+
+/**
+ * Handles all event-defined behavior. This is the MITM that acts as the front
+ * end for the algorithm. No other code calls functions on the algo.
+ */
+class EventAbstractionLayer {
+  operation_listeners = []
+
+  event_queue = []
+
+  constructor(ldm, sytbl = new MatrixSymbolTable()) {
+    this.sytbl = sytbl
+    this.listdoc = ldm
+  }
+  onOperation(fn) {
+    this.operation_listeners.push(fn)
+  }
+
+  async sendEvent(event, send, tryMerge) {
+    this.event_queue.push(event)
+
+    const preExitCleanup = () => {
+      event.state = EventState.COMPLETE
+      this.event_queue.splice(this.event_queue.indexOf(event), 1)
+    }
+
+    try {
+      let delay
+      event.state = EventState.SENDING
+      while ((delay = await send(event)) > 0) {
+        event.state = EventState.PENDING
+
+        for (let i = 0; i < this.event_queue.length; i++) {
+          const ev = this.event_queue[i]
+          if (tryMerge(event, ev)) {
+            return
+          }
+        }
+
+        await new Promise((resolve) => {
+          setTimeout(resolve, delay)
+        })
+        event.state = EventState.SENDING
+      }
+    } finally {
+      preExitCleanup()
+    }
+  }
+
+  createInsertionEvent(pos, body, send) {
+    const { start, rclk } = this.listdoc.insertLocal(pos, body.length)
+    const event = new InsertionEvent(body, start, rclk)
+
+    return this.sendEvent(event, send, (event, into) => {
+      if (
+        into !== event &&
+        into instanceof InsertionEvent &&
+        into.state === EventState.PENDING &&
+        into.rclk.cmp(event.rclk) === 0
+      ) {
+        if (event.start.cmp(into.end) === 0) {
+          debug.info('Merged insertion event to end of other')
+          into.body += event.body
+          return true
+        } else if (event.end.cmp(into.start) === 0) {
+          debug.info('Merged insertion event to start of other')
+          into.body = event.body + into.body
+          into.start = into.start.inverseOffsetLowest(event.body.length)
+          return true
+        }
+      }
+      return false
+    })
+  }
+  createRemovalEvent(pos, len, send) {
+    const { removals } = this.listdoc.removeLocal(pos, len)
+    // Note: Technically, I shouldn't grab the lamport clock out of the list doc
+    // like this, but this retains compatibility with older versions
+    const event = new RemovalEvent(removals, this.listdoc.clock)
+
+    return this.sendEvent(event, send, (event, into) => {
+      if (
+        into !== event &&
+        into instanceof RemovalEvent &&
+        into.state === EventState.PENDING &&
+        into.rclk.cmp(event.rclk) === 0
+      ) {
+        debug.info('Merged removal events')
+        into.removals.push(...event.removals)
+        return true
+      }
+      return false
+    })
+  }
+
+  processEvent({ id, type, content, sender }) {
+    const operations = []
+    let body
+    if (type === insert_event) {
+      if (!validate(content, InsertionEvent.JSON.Schema).valid) {
+        debug.warn(`Event ${id} schema is not valid`)
+        return
+      }
+
+      const { rclk, start } = content
+      const br = this.sytbl.lookupById(sender)
+      body = content.body
+
+      operations.push(
+        ...this.listdoc.insertLogoot(
+          br,
+          LogootPosition.fromJSON(start),
+          body.length,
+          LogootInt.fromJSON(rclk)
+        )
+      )
+    } else if (type === remove_event) {
+      if (!validate(content, RemovalEvent.JSON.Schema).valid) {
+        debug.warn(`Event ${id} schema is not valid`)
+        return
+      }
+
+      const { removals, rclk } = content
+      const br = this.sytbl.lookupById(sender)
+
+      removals.forEach(({ start, length }) => {
+        operations.push(
+          ...this.listdoc.removeLogoot(
+            br,
+            LogootPosition.fromJSON(start),
+            length,
+            LogootInt.fromJSON(rclk)
+          )
+        )
+      })
+    } else if (type === namespace_lg1) {
+      // Coming soon ;)
+      debug.warn('New event type. NYI')
+    }
+
+    if (operations.length) {
+      // Fill in the text based on the offset and length returned by the algo
+      operations.forEach((op) => {
+        if (op.type === 'i') {
+          if (!body) {
+            throw new Error(
+              'Algorithm returned insertion operation, but an insertion was not performed.'
+            )
+          }
+          op.body = body.slice(op.offset, op.length)
+          delete op.offset
+          delete op.length
+        }
+      })
+      // Inform listeners of new operations
+      this.operation_listeners.forEach((l) => l(operations))
+    }
+  }
+}
 
 export default ({ store }) => {
   const globals = {}
@@ -45,7 +319,8 @@ export default ({ store }) => {
             'm.room.avatar',
             'm.room.aliases',
             insert_event,
-            remove_event
+            remove_event,
+            namespace_lg1
           ]
         },
         state: {
@@ -163,7 +438,7 @@ export default ({ store }) => {
     await startClient(client)
   }
 
-  globals.createDocument = async (room_id, onIns, onRem, err) => {
+  globals.createDocument = async (room_id, onOperation, err) => {
     if (!globals.client) {
       throw new Error('Matrix client is uninitialized')
     }
@@ -178,52 +453,64 @@ export default ({ store }) => {
       })
     }
 
-    const doc = new Document(
-      (data) => {
-        switch (data.type) {
-          case EventType.INSERTION:
-            if (store.getters['debugstate/shouldBreak']('LI')) {
-              // eslint-disable-next-line
-              debugger
-            }
-            return client.sendEvent(room_id, insert_event, data.toJSON(), '')
-          case EventType.REMOVAL:
-            if (store.getters['debugstate/shouldBreak']('LR')) {
-              // eslint-disable-next-line
-              debugger
-            }
-            return client.sendEvent(room_id, remove_event, data.toJSON(), '')
-          default:
-            return Promise.reject(new Error('Invalid event type'))
+    const doc = { _active_listeners: [] }
+    // A symbol-mxid-branch mapping for conflict support (coming soon!)
+    doc.sytbl = new MatrixSymbolTable()
+    // The actual algo (also, look up our current user and store a symbol)
+    doc.ldm = new ListDocumentModel(doc.sytbl.lookupById(client.getUserId()))
+    // The event processing layer (all calls will be made to this)
+    doc.event_layer = new EventAbstractionLayer(doc.ldm, doc.sytbl)
+
+    const sendEvent = async (ev, type) => {
+      try {
+        await client.sendEvent(room_id, type, ev.toJSON(), '')
+      } catch (e) {
+        if (e.event) {
+          e.event.flagCancelled()
         }
-      },
-      onIns,
-      onRem
-    )
+        if (e && e.data && e.data.retry_after_ms) {
+          debug.warn(
+            `Hitting the rate limit: Will resend in ${e.data.retry_after_ms} ms`
+          )
+          return e.data.retry_after_ms
+        } else {
+          throw e
+        }
+      }
+      return 0
+    }
+
+    // Define functions for user operations
+    doc.insert = (pos, body) => {
+      debug.info(`User inserted ${body} @ ${pos}`)
+      doc.event_layer.createInsertionEvent(pos, body, (ev) =>
+        sendEvent(ev, insert_event)
+      )
+    }
+    doc.remove = (pos, length) => {
+      debug.info(`User removed ${length} @ ${pos}`)
+      doc.event_layer.createRemovalEvent(pos, length, (ev) =>
+        sendEvent(ev, remove_event)
+      )
+    }
+    doc.event_layer.onOperation(onOperation)
 
     let new_msgs = 0
     const onNewEvent = (event) => {
       new_msgs += 1
 
-      // Local echos will read as 'sending'
-      if (event.status === 'sending') {
-        return
-      }
+      const { content } = event.event
+      const sender = event.sender.userId
 
-      switch (event.getType()) {
-        case insert_event:
-          if (store.getters['debugstate/shouldBreak']('RI')) {
-            // eslint-disable-next-line
-            debugger
-          }
-          doc.remoteInsert(event.event.content)
-          return
-        case remove_event:
-          if (store.getters['debugstate/shouldBreak']('RR')) {
-            // eslint-disable-next-line
-            debugger
-          }
-          doc.remoteRemove(event.event.content)
+      try {
+        doc.event_layer.processEvent({
+          id: event.event.event_id,
+          type: event.getType(),
+          content,
+          sender
+        })
+      } catch (e) {
+        debug.warn('Error processing event', e)
       }
     }
 
@@ -295,7 +582,7 @@ export default ({ store }) => {
     }
 
     // Sync back until we are not recieving document events
-    if (store.state.debugstate.enable_syncback) {
+    if (debug.syncback_settings.initial) {
       do {
         await doc.fetchEvents(50)
         // ESLint complains that new_msgs isn't set during this loop. It

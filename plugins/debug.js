@@ -13,6 +13,9 @@ const setDebugState = (state = false) => {
 export default ({ store }) => {
   debug.store = store
 
+  debug.syncback_settings = {}
+  debug.syncback_settings.initial = true
+
   Vue.prototype.$debug = debug
   window.$debug = debug
 }

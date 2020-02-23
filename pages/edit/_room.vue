@@ -11,15 +11,6 @@
         WIP
       </a-drawer> -->
 
-      <DebugPanel
-        v-if="$store.state.debug"
-        cansync
-        @fetch="(n) => (fetchEvents ? fetchEvents(n) : undefined)"
-        @dumpLogoot="dumpLogoot"
-        @dumpLdoc="dumpLdoc"
-        @dumpRemoval="dumpRemoval"
-      />
-
       <div style="margin: 10px 0px; text-align: left;">
         <a-button type="primary" icon="home" @click="$router.push('/')">
           Home
@@ -46,7 +37,6 @@
 
 <script>
 import { debug } from '@/plugins/debug'
-import DebugPanel from '@/components/DebugPanel'
 import DocumentEditor from '@/components/DocumentEditor'
 
 export default {
@@ -54,7 +44,7 @@ export default {
     return /^[!#][^!#:]*:[^!#:]*(:[0-9]+)?$/gm.test(params.room)
   },
 
-  components: { DebugPanel, DocumentEditor },
+  components: { DocumentEditor },
 
   head() {
     return {
@@ -112,14 +102,31 @@ export default {
               self.cm_resolve_ready = resolve
             }
           })
+          const onOperation = (ops) => {
+            ops.forEach((op) => {
+              switch (op.type) {
+                case 'i':
+                  this.$refs.editor.insert(op.start, op.body)
+                  return
+                case 'r':
+                  this.$refs.editor.remove(op.start, op.length)
+                  return
+                case 't':
+                  this.$refs.editor.translate(op.source, op.dest, op.length)
+              }
+            })
+          }
           const doc = await self.$matrix.createDocument(
             this.$route.params.room,
-            this.$refs.editor.insert,
-            this.$refs.editor.remove,
+            onOperation,
             this.onDocumentError
           )
 
+          // The old debug panel has been replaced in favor of this
+          this.$debug.active_document = doc
+
           // This is a really stupid way to keep the document out of Vue's reach
+          // (We do **not** want Vue doing state tracking on the CRDT)
           Object.defineProperty(this, 'document', {
             get() {
               return doc
@@ -169,17 +176,17 @@ export default {
 
     dumpLogoot() {
       if (this.document) {
-        debug.info(this.document.logoot_bst.toString())
+        debug.info(this.document.doc.logoot_bst.toString())
       }
     },
     dumpLdoc() {
       if (this.document) {
-        debug.info(this.document.ldoc_bst.toString())
+        debug.info(this.document.doc.ldoc_bst.toString())
       }
     },
     dumpRemoval() {
       if (this.document) {
-        debug.info(this.document.removal_bst.toString())
+        debug.info(this.document.doc.removal_bst.toString())
       }
     }
 

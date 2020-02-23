@@ -7,10 +7,10 @@ Check it out at [matrix-notepad.kb1rd.net](https://matrix-notepad.kb1rd.net/) an
 This is not in any particular order:
 * [x] More or less working insertions
 * [x] More or less working removals
-* [ ] Conflict resolution
-* [ ] Improved UI/UX (this will be incremental)
+* [ ] Conflict resolution -- Almost!
+* [x] Improved UI/UX (this will be incremental)
 * [ ] Unit testing!!!
-* [ ] Create a different package for the `Logootish` algorithm
+* [x] Create a different package for the `Logootish` algorithm -- Right [here](https://github.com/KB1RD/logootish-js)
 * [ ] Node 'squashing' or similar. Currently Matrix Notepad has to sync ALL of the events :(
 * [ ] Rich text editing
 
@@ -23,9 +23,7 @@ Fundementally, it is frustrating that there is no standard way to collaborate on
 Just head on over to [matrix-notepad.kb1rd.net](https://matrix-notepad.kb1rd.net/) and sign in. This will bring you to a room list. It's not a great idea to re-use rooms, so if you haven't joined a document room yet, click the "Add" button at the top of the room list and either create a room or join an existing one by ID or alias.
 
 ### WARNING!
-First of all, since this is experimental software, do not use it to store very important or confidential information. Second, I have recommended to some of the Matrix devs that they create another account to test this program. This program *shouldn't* do anything to break anyone's account -- I use it on my normal Matrix account and nothing bad has happened. Yet. I suggested that they use another account because their job depends upon a working account. If you *absolutely* need your Matrix account every day, I would recommend creating another account just to be safe. This program will:
-1.) Post a good number of events to whichever room you choose. If you use this to type out a novel or something, it may slow down Riot since sync requests get larger, but this shouldn't be too much of an issue
-2.) Scroll back as far as possible in whichever room you choose. For this reason, **do not** open public chats since the editor will try to sync back to the beginning of time and probably crash your browser. I'm working on a more efficient sync system. See issue #11
+Since this is experimental software, do not use it to store very important or confidential information. I am not responsible for lost information
 
 ### Bug Reporting
 If you see error messages pop up or you encounter any bugs, **please** report it either on GitHub or on the Matrix chat. This is **very** helpful as I'm sure there are bugs that I don't know about.
@@ -40,19 +38,28 @@ Have a look at the [Wiki](https://github.com/KB1RD/matrix-notepad/wiki) if you'r
 
 ## Organization
 Here is the directory structure
-* `algorithms` -- A directory for possible algorithms in case I ever want to develop others. This is more of an organizational thing
-  * `/logootish` -- The `logootish` algorithm that I developed. This is the more interesting of all the directories
-    * `/index.js` -- The main Logootish algorithm
-    * `/bst.js` -- A custom binary sorting tree that supports custom compare functions and supports getting groups of nodes. This is used to select regions of nodes to consider. This may need a rewrite
-    * `/ints.js` -- A custom `Int32` type. I implemented this so that any int-based type would have a standard interface using methods rather than operators because JavaScript doesn't support operator overloading. In the future, it would be possible to replace the `Int32` type with any other int type because of this interface. Because it's only an Int32, the document will have issues if you add 2^31 characters consecutively, but then again so will most web browsers :)
-    * `utils.js` -- Random utilities that I should move somewhere else. This includes `Enum`, `arraymap`, `PeekableIterator`, and `FatalError`
 * `components` -- Vue components
 * `layouts` -- Nuxt layouts. This is currently just the default layout
 * `pages` -- Nuxt pages
 * `plugins` -- Nuxt plugins that perform vital functions for the program that are not the algorithm or the Vuex store
+  * `/matrix.js` -- Provides the interface between Matrix, the GUI, and the algorithm. It is dense and poorly written since I'm still trying to figure out where to put everything.
 * `static` -- Static files. Currently only has the site icon
 * `store` -- The Vuex store. This is used for UI only since I want the algorithm to be seperate from Vue.JS. Vuex does track the state of the Matrix client, but not the state of document nodes (that's all "traditional" ES6 JS)
 * `test` -- A directory that I have reserved for unit testing. This would help **a lot** if I actually implemented it. *sigh*
+
+## Debugging
+I have removed the debug panel as of version `0.2.0` in favor of a console based debug under the window-scope variable `$debug`. Here's the main tricks:
+
+```js
+// Provides direct access to the ListDocumentModel
+$debug.active_document.ldm
+
+// Disable the initial load
+$debug.syncback_settings.initial = false
+
+// Manually fetch events (if initial load is disabled)
+$debug.active_document.fetchEvents(1)
+```
 
 ## Build Setup
 ``` bash

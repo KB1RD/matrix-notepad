@@ -272,7 +272,7 @@ class EventAbstractionLayer {
               'Algorithm returned insertion operation, but an insertion was not performed.'
             )
           }
-          op.body = body.slice(op.offset, op.length)
+          op.body = body.slice(op.offset, op.offset + op.length)
           delete op.offset
           delete op.length
         }

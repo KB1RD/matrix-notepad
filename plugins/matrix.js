@@ -13,7 +13,7 @@ import {
   LogootPosition,
   LogootInt,
   EventState
-} from 'logootish-js'
+} from '@kb1rd/logootish-js'
 import { validate } from 'jsonschema'
 
 import { debug } from '@/plugins/debug'

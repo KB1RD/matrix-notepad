@@ -6,154 +6,71 @@
       fill="#fff"
       stroke="#fff"
     />
-    <a-card id="signin-dialog">
-      <a-card-meta title="Sign In">
-        <template v-slot:description>
-          Software written by Matrix users like you. Check it out on
-          <a href="https://github.com/KB1RD/matrix-notepad">GitHub</a> and come
-          chat on
-          <a
-            href="https://matrix.to/#/#matrix-collaboration:kb1rd.net?via=kb1rd.net&via=matrix.org&via=matrix.geklautecloud.de"
-          >
-            #matrix-collaboration:kb1rd.net.
-          </a>
-        </template>
-      </a-card-meta>
+    <b-card id="signin-dialog" title="Sign In">
+      <b-card-text>
+        Software written by Matrix users like you. Check it out on
+        <a href="https://github.com/KB1RD/matrix-notepad">GitHub</a> and come
+        chat on
+        <a
+          href="https://matrix.to/#/#matrix-collaboration:kb1rd.net?via=kb1rd.net&via=matrix.org&via=matrix.geklautecloud.de"
+        >
+          #matrix-collaboration:kb1rd.net.
+        </a>
+      </b-card-text>
+      <AlertSection ref="alerts" />
+      <b-form @submit="onFormSubmit">
+        <b-form-group label-for="mxid-input">
+          <b-form-input
+            id="mxid-input"
+            v-model="form.id"
+            :disabled="is_busy"
+            :state="id_valid"
+            required
+            placeholder="@name:server.org"
+            @input="onUserIdChange"
+          />
+        </b-form-group>
+        <b-form-group label-for="pass-input">
+          <b-form-input
+            id="pass-input"
+            v-model="form.pass"
+            :disabled="is_busy"
+            type="password"
+            required
+            placeholder="Password"
+          />
+        </b-form-group>
 
-      <a-form
-        :form="settings"
-        layout="vertical"
-        hide-required-mark
-        style="margin-top: 50px; text-align: left;"
-        @submit="onFormSubmit"
-      >
-        <a-row :gutter="16">
-          <a-col>
-            <a-form-item>
-              <a-input
-                v-decorator="[
-                  'id',
-                  {
-                    rules: [
-                      {
-                        required: true,
-                        message: 'Enter your username'
-                      },
-                      {
-                        pattern: /^[@][^\@\:]*:[^\@\:]*(:[0-9]+)?$/gm,
-                        message:
-                          'Enter your full Matrix ID (ex. @name:server.org)'
-                      }
-                    ]
-                  }
-                ]"
-                placeholder="@name:server.org"
-                :disabled="is_busy"
-                @change="onUserIdChange"
-              >
-                <a-icon
-                  slot="prefix"
-                  type="user"
-                  style="color: rgba(0,0,0,.25)"
-                />
-              </a-input>
-            </a-form-item>
-          </a-col>
-        </a-row>
-        <a-row :gutter="16">
-          <a-col>
-            <a-form-item>
-              <a-input-password
-                v-decorator="[
-                  'pass',
-                  {
-                    rules: [
-                      {
-                        required: true,
-                        message: 'Enter your password'
-                      }
-                    ]
-                  }
-                ]"
-                placeholder="Password"
-                :disabled="is_busy"
-              >
-                <a-icon
-                  slot="prefix"
-                  type="lock"
-                  style="color: rgba(0,0,0,.25)"
-                />
-              </a-input-password>
-            </a-form-item>
-          </a-col>
-        </a-row>
+        <b-form-group>
+          <b-form-checkbox v-model="form.checked" :disabled="is_busy">
+            Infer homeserver URL
+          </b-form-checkbox>
+        </b-form-group>
+        <b-form-group v-if="!form.checked" label-for="mxid-input">
+          <b-form-input
+            id="mxid-input"
+            v-model="form.url"
+            :required="!form.checked"
+            :disabled="is_busy"
+            :state="url_valid"
+            placeholder="https://matrix.server.org"
+          />
+        </b-form-group>
+        <b-alert
+          :show="!form.checked && form.url.toLowerCase().startsWith('http:')"
+          variant="warning"
+        >
+          Warning: This server address is using insecure HTTP. You should always
+          use HTTPS to connect to your server. HTTP support is for development
+          and testing purposes only.
+        </b-alert>
 
-        <a-row :gutter="16">
-          <a-col>
-            <a-form-item>
-              <a-checkbox
-                v-model="infer_hs"
-                v-decorator="['infer_hs']"
-                :disabled="is_busy"
-              >
-                Infer homeserver URL
-              </a-checkbox>
-            </a-form-item>
-          </a-col>
-        </a-row>
-        <a-row v-if="!infer_hs" :gutter="16">
-          <a-col>
-            <a-form-item label="Homeserver URL">
-              <a-input
-                v-decorator="[
-                  'url',
-                  {
-                    rules: [
-                      {
-                        required: !infer_hs,
-                        message: 'Enter the your homeserver URL'
-                      }
-                    ]
-                  }
-                ]"
-                placeholder="https://server.org"
-                :disabled="is_busy"
-              >
-                <a-icon
-                  slot="prefix"
-                  type="database"
-                  style="color: rgba(0,0,0,.25)"
-                />
-              </a-input>
-            </a-form-item>
-          </a-col>
-        </a-row>
-
-        <!-- <a-row :gutter="16" justify="end">
-          <a-col style="text-align: right;">
-            <a-button type="link">What's this?</a-button>
-          </a-col>
-        </a-row>
-        <a-row :gutter="16" justify="end">
-          <a-col style="text-align: right;">
-            <a-button type="link">Register</a-button>
-          </a-col>
-        </a-row> -->
-
-        <a-row :gutter="16">
-          <a-col>
-            <a-button
-              html-type="submit"
-              type="primary"
-              block
-              :loading="is_busy"
-            >
-              {{ is_busy ? 'Working...' : 'Sign In' }}
-            </a-button>
-          </a-col>
-        </a-row>
-      </a-form>
-    </a-card>
+        <b-button type="submit" block variant="primary" :disabled="is_busy">
+          <b-spinner v-if="is_busy" small />
+          {{ is_busy ? 'Signing in...' : 'Sign In' }}
+        </b-button>
+      </b-form>
+    </b-card>
   </div>
 </template>
 
@@ -161,14 +78,20 @@
 import { mapMutations } from 'vuex'
 import { SimpleSVG } from 'vue-simple-svg'
 import { debug } from '@/plugins/debug'
+import AlertSection from '@/components/AlertSection'
 
 export default {
   layout: 'gradient-bg-full',
-  components: { SimpleSVG },
+  components: { SimpleSVG, AlertSection },
 
   data() {
     return {
-      settings: this.$form.createForm(this),
+      form: {
+        id: '',
+        pass: '',
+        checked: true,
+        url: ''
+      },
       infer_hs: true,
       signing_in: true
     }
@@ -177,6 +100,11 @@ export default {
   computed: {
     is_busy() {
       return this.$store.getters.hasBlockingOperation
+    },
+
+    id_valid() {
+      const res = /^[@][^@:]*:[^@:]*(:[0-9]+)?$/gm.exec(this.form.id)
+      return this.form.id.length ? (res && res.index === 0) || false : undefined
     }
   },
 
@@ -212,13 +140,19 @@ export default {
       this.$router.replace({ path })
     },
 
-    onUserIdChange(e) {
-      if (e.target.value.length) {
-        if (e.target.value.lastIndexOf('@') > 0) {
-          e.target.value = e.target.value.replace(/@/g, '')
+    onUserIdChange() {
+      if (this.form.id.length) {
+        while (this.form.id.lastIndexOf('@') > 0) {
+          this.form.id =
+            this.form.id.slice(0, this.form.id.lastIndexOf('@')) +
+            ':' +
+            this.form.id.slice(
+              this.form.id.lastIndexOf('@') + 1,
+              this.form.id.length
+            )
         }
-        if (!e.target.value.startsWith('@')) {
-          e.target.value = '@' + e.target.value
+        if (!this.form.id.startsWith('@')) {
+          this.form.id = '@' + this.form.id
         }
       }
     },
@@ -227,7 +161,6 @@ export default {
       this.$matrix.shutdown()
 
       // Start a blocking signin
-      const hide = this.$message.loading('Signing in...', 0)
       const self = this
       self.$store.dispatch(
         'watchBlockingOperation',
@@ -238,30 +171,30 @@ export default {
               // Update the user settings since they're valid
               self.updateSettings({ ...data, room: '' })
             }
-            self.$message.success("You're signed in!")
             self.setup_visible = false
             self.redirect()
           } catch (e) {
             debug.error('Failed to sign in', e)
-            self.$message.error('Failed to sign in!')
+            // TODO: Less vague error messages
+            self.$refs.alerts.alert({
+              contents: 'Failed to sign in!',
+              variant: 'danger'
+            })
           }
-          hide()
         })()
       )
     },
 
     onFormSubmit(e) {
       e.preventDefault()
-
-      const self = this
-      this.settings.validateFields((err, values) => {
-        if (!err) {
-          self.performSignInOperation(
-            self.$matrix.userPassSignIn(values.url, values.id, values.pass),
-            true
-          )
-        }
-      })
+      if (!this.id_valid) {
+        return
+      }
+      const { id, pass, url, checked } = this.form
+      this.performSignInOperation(
+        this.$matrix.userPassSignIn(!checked ? url : undefined, id, pass),
+        true
+      )
     },
 
     ...mapMutations({

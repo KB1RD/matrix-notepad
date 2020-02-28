@@ -1,33 +1,29 @@
 <template>
   <div class="container">
     <div>
-      <!-- <a-drawer
-        :visible="setup_visible"
-        title="Document Settings"
-        placement="right"
-        :closable="true"
-        @close="closeMatrixSetup"
-      >
-        WIP
-      </a-drawer> -->
-
       <div style="margin: 10px 0px; text-align: left;">
-        <a-button type="primary" icon="home" @click="$router.push('/')">
+        <b-button @click="$router.push('/')" size="sm">
+          <b-icon icon="house" aria-hidden="true" />
           Home
-        </a-button>
+        </b-button>
       </div>
 
       <DocumentEditor
         v-if="!has_fatal_error"
         ref="editor"
+        :title="room.name"
         :loading="is_busy || is_reconnecting"
         @ready="cm_ready = true"
         @insert="(i) => (documentInsert ? documentInsert(i) : undefined)"
         @remove="(r) => (documentRemove ? documentRemove(r) : undefined)"
+        @set-title="(t) => setTitle(t)"
       />
 
       <div v-if="has_fatal_error">
-        <a-icon type="close-circle" style="font-size: 64px; color: #f007" />
+        <b-icon
+          icon="alert-circle-fill"
+          style="width: 64px; height: 64px; color: #f007"
+        />
         <h1>Fatal error</h1>
         The document could not be loaded.
       </div>
@@ -73,6 +69,10 @@ export default {
     },
     is_reconnecting() {
       return this.$store.state.matrix.matrix_state === 'RECONNECTING'
+    },
+
+    room() {
+      return this.$store.getters['matrix/room'](this.$route.params.room)
     }
   },
 
@@ -138,15 +138,12 @@ export default {
           this.fetchEvents = (n) => {
             doc
               .fetchEvents(n)
-              .then(() => this.$message.info('Sync complete'))
               .catch((e) => {
-                this.$message.error('Sync failed')
                 debug.error(e)
               })
           }
         } catch (e) {
           debug.error('Failed to open document', e)
-          this.$message.error('Failed to open document!')
           this.has_fatal_error = true
         }
       })()
@@ -163,42 +160,25 @@ export default {
     onDocumentError(e, doc) {
       if (e.fatal) {
         debug.error('Fatal internal error', e)
-        this.$message.error('Fatal internal error')
         this.has_fatal_error = true
         this.$matrix.shutdownDocument(doc)
       } else {
         debug.warn('Internal error', e)
-        this.$message.warning(
-          'Internal errors encountered. See console for details'
+      }
+    },
+
+    setTitle(name) {
+      this.$matrix.client
+        .sendStateEvent(this.$route.params.room, 'm.room.name', { name })
+        .then(
+          () => {
+            debug.info(`Set room title to '${name}'`)
+          },
+          (e) => {
+            debug.warn('Failed to set title', e)
+          }
         )
-      }
-    },
-
-    dumpLogoot() {
-      if (this.document) {
-        debug.info(this.document.doc.logoot_bst.toString())
-      }
-    },
-    dumpLdoc() {
-      if (this.document) {
-        debug.info(this.document.doc.ldoc_bst.toString())
-      }
-    },
-    dumpRemoval() {
-      if (this.document) {
-        debug.info(this.document.doc.removal_bst.toString())
-      }
     }
-
-    /* openMatrixSetup() {
-      this.setup_visible = true
-    },
-    closeMatrixSetup() {
-      this.setup_visible = false
-      if (!this.signed_in) {
-        this.$message.warning('Operation cancelled. You are not signed in')
-      }
-    } */
   }
 }
 </script>

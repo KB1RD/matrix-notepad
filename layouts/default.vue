@@ -1,20 +1,28 @@
 <template>
   <div>
-    <a-popover title="My Account" placement="leftBottom">
-      <template slot="content">
-        <a-checkbox
-          style="margin-bottom: 10px;"
+    <div id="avatar" class="floating-avatar">
+      <b-icon icon="person" style="color: white; width: 100%; height: 100%;" />
+      <!-- TODO: Load user's profile pic -->
+    </div>
+    <b-popover
+      target="avatar"
+      title="My Account"
+      placement="rightbottom"
+      triggers="hover focus"
+    >
+      <div style="min-width: 150px;">
+        <b-checkbox
+          style="margin-bottom: 20px;"
           :checked="$store.state.debug"
-          @change="(e) => $store.commit('setDebugEnabled', e.target.checked)"
+          @change="(checked) => $store.commit('setDebugEnabled', checked)"
         >
           Enable Debug
-        </a-checkbox>
-        <a-button type="danger" size="small" block @click="onSignOut">
+        </b-checkbox>
+        <b-button variant="danger" size="sm" block @click="onSignOut">
           Sign Out
-        </a-button>
-      </template>
-      <a-avatar class="floating-avatar" size="large" icon="user" />
-    </a-popover>
+        </b-button>
+      </div>
+    </b-popover>
 
     <nuxt />
   </div>
@@ -88,5 +96,10 @@ html {
   top: 8px;
   left: 8px;
   z-index: 100;
+
+  width: 50px;
+  height: 50px;
+  border-radius: 100%;
+  background: #aaa;
 }
 </style>

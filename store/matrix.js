@@ -27,7 +27,13 @@ export const getters = {
   },
 
   rooms(state) {
+    return Object.values(state.rooms)
+  },
+  room_map(state) {
     return state.rooms
+  },
+  room: (state) => (id) => {
+    return state.rooms[id] || { roomId: id }
   }
 }
 
@@ -47,9 +53,11 @@ export const mutations = {
       throw new TypeError('Rooms object is not an array')
     }
 
-    // Matrix mutates rooms directly, so we must duplicate them
-    state.rooms = rooms.map(({ roomId, name }) => {
-      return { roomId, name }
+    // Matrix mutates rooms directly, so we must duplicate them to avoid later
+    // store corruption
+    state.rooms = {}
+    rooms.forEach(({ roomId, name }) => {
+      state.rooms[roomId] = { roomId, name }
     })
   },
 

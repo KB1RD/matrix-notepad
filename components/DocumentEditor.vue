@@ -1,25 +1,42 @@
 <template>
-  <a-spin :spinning="loading">
-    <a-icon slot="indicator" type="loading" style="font-size: 48px" spin />
-
-    <a-card>
-      <!-- <template slot="actions" class="ant-card-actions">
-        <a-icon type="setting" @click="$emit('settings-clicked')" />
-        <a-icon type="share-alt" />
-      </template> -->
-      <a-card-meta title="Document" />
+  <div class="with-loading" :data-loading="loading">
+    <div style="display: flex; align-items: center; justify-content: center;">
+      <b-spinner style="width: 3rem; height: 3rem;" label="Loading..." />
+    </div>
+    <b-card bg-variant="light">
+      <template v-slot:header>
+        <b-input-group>
+          <b-form-input
+            class="input-text-unless-focus"
+            size="lg"
+            placeholder="Untitled Document"
+            v-model="internal_title"
+            @blur="(e) => e.target.focus()"
+          />
+          <b-input-group-append v-if="internal_title !== title">
+            <b-button
+              variant="success"
+              @click="$emit('set-title', internal_title)"
+            >
+              <b-icon icon="check" />
+            </b-button>
+            <b-button variant="danger" @click="() => (internal_title = title)">
+              <b-icon icon="x" />
+            </b-button>
+          </b-input-group-append>
+        </b-input-group>
+      </template>
       <client-only placeholder="Codemirror Loading...">
         <codemirror
           ref="codemirror"
-          v-model="text"
-          style="text-align: left; margin: -24px -32px; margin-top: 3em; overflow: auto;"
+          style="text-align: left; margin: 0px -20px; margin-top: 3em; overflow: auto;"
           :options="cmOption"
           @ready="$emit('ready')"
           @beforeChange="onNewChanges"
         />
       </client-only>
-    </a-card>
-  </a-spin>
+    </b-card>
+  </div>
 </template>
 
 <script>
@@ -27,14 +44,16 @@ import { debug } from '@/plugins/debug'
 
 export default {
   props: {
-    loading: Boolean
+    loading: Boolean,
+    title: {
+      default: '',
+      type: String
+    }
   },
 
   data() {
     return {
-      console,
-      text: '',
-
+      internal_title: '',
       cmOption: {
         tabSize: 4,
         foldGutter: true,
@@ -46,6 +65,16 @@ export default {
 
       changes_to_ignore: {}
     }
+  },
+
+  watch: {
+    title() {
+      this.internal_title = this.title
+    }
+  },
+
+  mounted() {
+    this.internal_title = this.title
   },
 
   methods: {
@@ -128,5 +157,28 @@ export default {
 <style>
 .vue-codemirror .CodeMirror {
   height: 100%;
+}
+.input-text-unless-focus:not(:focus) {
+  background-color: #0000;
+  border-color: #0000;
+}
+.with-loading {
+  position: relative;
+}
+.with-loading > *:first-child {
+  position: absolute;
+  z-index: -100;
+  top: 0px;
+  left: 0px;
+  bottom: 0px;
+  right: 0px;
+  width: 100%;
+  height: 100%;
+}
+.with-loading[data-loading] > *:first-child {
+  z-index: 100;
+}
+.with-loading[data-loading] > *:not(:first-child) {
+  opacity: 0.5;
 }
 </style>

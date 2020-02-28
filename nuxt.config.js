@@ -27,18 +27,16 @@ export default {
    ** Global CSS
    */
   css: [
-    'ant-design-vue/dist/antd.css',
-
     // lib css
     'codemirror/lib/codemirror.css',
     // theme css
-    'codemirror/theme/mdn-like.css'
+    'codemirror/theme/mdn-like.css',
+    'scss/glow.scss'
   ],
   /*
    ** Plugins to load before mounting the App
    */
   plugins: [
-    '@/plugins/antd-ui',
     { src: '@/plugins/codemirror.js', ssr: false },
     { src: '@/plugins/matrix.js', ssr: false },
     { src: '@/plugins/debug.js', ssr: false },
@@ -55,11 +53,14 @@ export default {
    ** Nuxt.js modules
    */
   modules: [
-    // Doc: https://axios.nuxtjs.org/usage
-    // Right now, stuff is handled by the Matrix JS SDK
-    // Would be useful if I ever decide to talk to the HS directly...
-    // '@nuxtjs/axios'
+    'bootstrap-vue/nuxt'
   ],
+
+  bootstrapVue: {
+    bootstrapCSS: false,
+    bootstrapVueCSS: true,
+    icons: true
+  },
 
   // axios: {},
   build: {

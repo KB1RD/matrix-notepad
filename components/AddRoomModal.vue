@@ -1,145 +1,84 @@
 <template>
-  <a-modal
+  <b-modal
     title="Add a Room"
-    :visible="visible"
-    :confirm-loading="adding_room"
-    :closable="!adding_room"
-    :mask-closable="!adding_room"
-    :ok-text="type === 'n' ? 'Create' : 'Join'"
-    :cancel-button-props="{ props: { disabled: adding_room } }"
+    ref="modal"
+    :ok-title="type === 'n' ? 'Create' : 'Join'"
+    :busy="adding_room"
+    :no-close-on-backdrop="adding_room"
+    :no-close-on-esc="adding_room"
     @ok="handleOk"
-    @cancel="handleCancel"
   >
-    <a-form :form="form" layout="vertical" hide-required-mark>
-      <a-row :gutter="16">
-        <a-form-item>
-          <a-select
-            v-decorator="[
-              'type',
-              {
-                initialValue: 'n'
-              }
-            ]"
-            style="width: 240px"
-            @change="(v) => (type = v)"
-          >
-            <a-select-option value="n">Create a new room</a-select-option>
-            <a-select-option value="j">Join an existing room</a-select-option>
-          </a-select>
-        </a-form-item>
-      </a-row>
-
-      <a-row v-if="type === 'n'" :gutter="16">
-        <a-form-item>
-          <a-checkbox
-            v-decorator="['add_alias']"
-            @change="(e) => (add_alias = e.target.checked)"
-          >
-            Add an alias
-          </a-checkbox>
-        </a-form-item>
-      </a-row>
-      <a-row v-if="type === 'n' && add_alias" :gutter="16">
-        <a-form-item>
-          <a-input
-            v-decorator="[
-              'alias',
-              {
-                rules: [
-                  {
-                    required: true,
-                    message: 'An alias is required'
-                  },
-                  {
-                    pattern: /^[^#:]*$/gm,
-                    message: 'Enter only the localpart of the alias'
-                  }
-                ]
-              }
-            ]"
-            placeholder="Alias"
+    <AlertSection ref="alerts" />
+    <b-form>
+      <b-tabs v-model="form.tab" content-class="mt-3">
+        <b-tab title="Create a room" active>
+          <b-form-group label-for="name-input">
+            <b-form-input
+              id="name-input"
+              v-model="form.name"
+              :disabled="adding_room"
+              placeholder="Room Name (optional)"
+            />
+          </b-form-group>
+        </b-tab>
+        <b-tab title="Join a room"></b-tab>
+      </b-tabs>
+      <b-form-group label-for="alias-input">
+        <b-input-group prepend="#">
+          <b-form-input
+            id="alias-input"
+            aria-describedby="alias-live-feedback"
+            v-model="form.alias"
+            :disabled="adding_room"
+            :required="type === 'j'"
+            :state="alias_valid"
+            :placeholder="type === 'n' ? 'Room Alias (optional)' : 'Room Alias'"
           />
-        </a-form-item>
-      </a-row>
-
-      <a-row v-if="type === 'n'" :gutter="16">
-        <a-form-item>
-          <a-checkbox
-            v-decorator="['add_name']"
-            @change="(e) => (add_name = e.target.checked)"
-          >
-            Add a name
-          </a-checkbox>
-        </a-form-item>
-      </a-row>
-      <a-row v-if="type === 'n' && add_name" :gutter="16">
-        <a-form-item>
-          <a-input
-            v-decorator="[
-              'name',
-              {
-                rules: [
-                  {
-                    required: true,
-                    message: 'A name is required'
-                  }
-                ]
-              }
-            ]"
-            placeholder="Name"
-          />
-        </a-form-item>
-      </a-row>
-
-      <a-row v-if="type === 'j'" :gutter="16">
-        <a-form-item>
-          <a-input
-            v-decorator="[
-              'room',
-              {
-                rules: [
-                  {
-                    required: true,
-                    message: 'A room to join is required'
-                  },
-                  {
-                    pattern: /^[!#][^!#:]*:[^!#:]*(:[0-9]+)?$/gm,
-                    message: 'This is not a valid Matrix room ID or alias'
-                  }
-                ]
-              }
-            ]"
-            placeholder="!roomid:matrix.org"
-          />
-        </a-form-item>
-      </a-row>
-    </a-form>
-  </a-modal>
+          <b-form-invalid-feedback id="alias-live-feedback">
+            Enter just the localpart of the alias.
+          </b-form-invalid-feedback>
+        </b-input-group>
+      </b-form-group>
+    </b-form>
+  </b-modal>
 </template>
 
 <script>
 import { debug } from '@/plugins/debug'
+import AlertSection from '@/components/AlertSection'
 
 export default {
+  components: { AlertSection },
   data() {
     return {
-      form: this.$form.createForm(this),
+      form: {
+        alias: '',
+        name: '',
+        tab: 0
+      },
 
-      type: 'n',
-      add_alias: false,
-      add_name: false,
-
-      visible: false,
       adding_room: false
+    }
+  },
+
+  computed: {
+    type() {
+      return this.form.tab === 0 ? 'n' : 'j'
+    },
+    alias_valid() {
+      const res = /^[^#:]*$/gm.exec(this.form.alias)
+      return this.form.alias.length || this.type === 'j'
+        ? (res && res.index === 0) || false
+        : undefined
     }
   },
 
   methods: {
     show() {
-      this.visible = true
+      this.$refs.modal.show()
     },
     hide() {
-      this.visible = false
+      this.$refs.modal.hide()
     },
 
     onFormSubmit(values) {
@@ -147,64 +86,66 @@ export default {
         return
       }
 
+      const alias = values.alias.trim()
+      const name = values.name
+      this.adding_room = true
       if (this.type === 'n') {
-        this.adding_room = true
-        const hide = this.$message.loading('Creating room...', 0)
         this.$matrix.client
           .createRoom({
-            room_alias_name: values.add_alias ? values.alias : undefined,
-            name: values.add_name ? values.name : undefined
+            room_alias_name: alias !== '' ? alias : undefined,
+            name: name !== '' ? name : undefined
           })
           .then(
             ({ room_id }) => {
-              this.$message.success('Room created')
               if (room_id) {
                 this.$router.replace('/edit/' + encodeURIComponent(room_id))
               }
+              this.hide()
             },
             (e) => {
               debug.error('Failed to create room', e)
-              this.$message.error('Failed to create room!')
+              this.$refs.alerts.alert({
+                variant: 'danger',
+                contents: 'Failed to create room!'
+              })
             }
           )
           .then(() => {
             this.adding_room = false
-            hide()
           })
       } else if (this.type === 'j') {
-        this.adding_room = true
-        const hide = this.$message.loading('Joining room...', 0)
         this.$matrix.client
           .joinRoom(values.room, { syncRoom: false })
           .then(
             ({ roomId }) => {
-              this.$message.success('Room joined')
               if (roomId) {
                 this.$router.replace('/edit/' + encodeURIComponent(roomId))
               }
+              this.hide()
             },
             (e) => {
               debug.error('Failed to join room', e)
-              this.$message.error('Failed to join room!')
+              this.$refs.alerts.alert({
+                variant: 'danger',
+                contents: 'Failed to join room!'
+              })
             }
           )
           .then(() => {
             this.adding_room = false
-            hide()
           })
       }
     },
 
     handleOk(e) {
-      const self = this
-      this.form.validateFields((err, values) => {
-        if (!err) {
-          self.onFormSubmit(values)
-        }
-      })
-    },
-    handleCancel(e) {
-      this.visible = false
+      e.preventDefault()
+      if (
+        this.alias_valid === false ||
+        (!this.alias_valid && this.type === 'j')
+      ) {
+        return
+      }
+      this.onFormSubmit(this.form)
     }
   }
 }

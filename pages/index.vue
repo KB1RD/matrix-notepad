@@ -1,33 +1,30 @@
 <template>
   <div class="container">
     <div>
-      <a-button
-        type="dashed"
+      <b-button
+        variant="primary"
         block
         style="margin: 10px 0px;"
         @click="$refs.modal.show()"
       >
         + Add
-      </a-button>
+      </b-button>
       <AddRoomModal ref="modal" />
 
-      <a-config-provider>
-        <template v-slot:renderEmpty>
-          <div style="text-align: center">
-            <a-icon type="file-unknown" style="font-size: 72px" />
-            <p>You have no rooms</p>
+      <b-list-group>
+        <b-list-group-item
+          v-for="room in rooms"
+          :key="room.roomId"
+          href="#"
+          class="flex-column align-items-start"
+          @click="$router.push('/edit/' + room.roomId)"
+        >
+          <div class="d-flex w-100 justify-content-between">
+            <h5 class="mb-1">{{ room.name }}</h5>
+            <small class="text-muted">{{ room.roomId }}</small>
           </div>
-        </template>
-        <a-list class="room-list" item-layout="horizontal" :data-source="rooms">
-          <a-list-item slot="renderItem" slot-scope="item">
-            <a-list-item-meta :description="item.roomId">
-              <nuxt-link slot="title" :to="'/edit/' + item.roomId">
-                {{ item.name }}
-              </nuxt-link>
-            </a-list-item-meta>
-          </a-list-item>
-        </a-list>
-      </a-config-provider>
+        </b-list-group-item>
+      </b-list-group>
     </div>
   </div>
 </template>

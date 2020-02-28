@@ -12,8 +12,7 @@ import {
   ListDocumentModel,
   LogootPosition,
   LogootInt,
-  EventState,
-  FatalError
+  EventState
 } from '@kb1rd/logootish-js'
 import { validate } from 'jsonschema'
 
@@ -487,7 +486,6 @@ export default ({ store }) => {
       doc.event_layer.createInsertionEvent(pos, body, (ev) =>
         sendEvent(ev, insert_event)
       )
-      throw new FatalError('yeet')
     }
     doc.remove = (pos, length) => {
       debug.info(`User removed ${length} @ ${pos}`)

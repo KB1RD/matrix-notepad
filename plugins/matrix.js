@@ -10,19 +10,26 @@ import sdk from 'matrix-js-sdk'
 import axios from 'axios'
 import {
   ListDocumentModel,
+  BranchOrder,
   LogootPosition,
-  LogootInt,
-  EventState
+  LogootInt
 } from '@kb1rd/logootish-js'
 import { validate } from 'jsonschema'
 
 import { debug } from '@/plugins/debug'
 
-const namespace = 'net.kb1rd.logootish-0'
+/**
+ * https://matrix.to/#/!NasysSDfxKxZBzJJoE:matrix.org/$SkovTFf9be1rTTewjrwAQca4LodrUezBNafCUD4GAWU?via=matrix.org&via=amorgan.xyz&via=pixie.town
+ */
+const matrix_typed_state = 'org.matrix.msc1840'
+
+const plaintext = 'net.kb1rd.plaintext'
+
+const namespace = 'net.kb1rd.anchorlogoot0'
 const insert_event = namespace + '.ins'
 const remove_event = namespace + '.rem'
 
-const namespace_lg1 = 'net.kb1rd.logootish-1'
+export { matrix_typed_state, plaintext }
 
 /**
  * A mapping of MXIDs and custom-branches (NYI) to symbols for the algo
@@ -56,51 +63,153 @@ class MatrixSymbolTable {
   }
 }
 
+/**
+ * This ensures that the branch order has this particular branch in the correct order.
+ */
+const onNewBranch = (sytbl, order, mxid, branch) => {
+  const symbol = sytbl.lookupById(mxid, branch)
+  if (order.order.includes(symbol)) {
+    return
+  }
+  const mxidBranchOrderFunc = (a, b) => {
+    if (a.branch === b.branch) {
+      if (a.mxid > b.mxid) {
+        return -1
+      } else if (a.mxid < b.mxid) {
+        return 1
+      }
+      return 0
+    }
+    if (!a.branch) {
+      return 1
+    }
+    if (!b.branch) {
+      return -1
+    }
+    if (a.branch > b.branch) {
+      return 1
+    } else {
+      return -1
+    }
+  }
+  window.mxidBranchOrderFunc = mxidBranchOrderFunc
+  order.insertOrdered(symbol, (a, b) =>
+    mxidBranchOrderFunc(sytbl.lookupBySymbol(a), sytbl.lookupBySymbol(b))
+  )
+}
+
+const EventState = {
+  PENDING: 0,
+  SENDING: 1,
+  COMPLETE: 2
+}
+
 class InsertionEvent {
   state = EventState.PENDING
-  constructor(body, start, rclk) {
-    this.body = body
-    this.start = start
-    this.rclk = rclk
+  constructor(sytbl, br, body, left, right, clk) {
+    Object.assign(this, { sytbl, br, body, left, right, clk })
   }
 
+  get start() {
+    return new LogootPosition(this.br, this.body.length, this.left, this.right)
+  }
   get end() {
-    return this.start.offsetLowest(this.body.length)
+    return new LogootPosition(
+      this.br,
+      this.body.length,
+      this.left,
+      this.right
+    ).offsetLowest(this.body.length)
   }
 
   toJSON() {
+    const order = new BranchOrder()
     return {
-      start: this.start.toJSON(),
-      rclk: this.rclk.toJSON(),
-      body: this.body
+      a: {
+        v: 0,
+        l: this.left?.toMappedOrderJSON(order),
+        r: this.right?.toMappedOrderJSON(order),
+        o: order.toJSON((br) => {
+          const { mxid, branch } = this.sytbl.lookupBySymbol(br)
+          if (branch) {
+            return [mxid, branch]
+          } else {
+            return [mxid]
+          }
+        })
+      },
+      // See the schema for why this is an array
+      d: [this.body],
+      c: this.clk.toJSON()
     }
   }
 }
+
+const OrderLookupArray = {
+  type: 'array',
+  items: { type: 'array', items: [{ type: 'string' }] }
+}
+const MappedLogootPosition = {
+  type: 'array',
+  items: {
+    type: 'array',
+    items: [LogootInt.JSON.Schema, { type: 'number' }]
+  }
+}
+
 InsertionEvent.JSON = {}
 InsertionEvent.JSON.Schema = {
   type: 'object',
   properties: {
-    body: { type: 'string' },
-    start: LogootPosition.JSON.Schema,
-    rclk: LogootInt.JSON.Schema
+    // Anchors
+    a: {
+      type: 'object',
+      properties: {
+        // Version for start resolution. Currently 0
+        v: { type: 'number' },
+        // Left anchor
+        l: MappedLogootPosition,
+        // Right anchor
+        r: MappedLogootPosition,
+        // Order lookup. Entries in the positions are mapped to branches here.
+        o: OrderLookupArray
+      },
+      required: ['v', 'o']
+    },
+    // Data, in this case an array of strings
+    // The strings are `join`ed. This is rich text future proofing.
+    d: { type: 'array', items: { type: 'string' } },
+    // Lamport clock
+    c: LogootInt.JSON.Schema,
+    // Branch information (currently not used. May be used in the future for
+    // including device ID or user-defined branch information)
+    br: { type: 'object' }
   },
-  required: ['body', 'start', 'rclk']
+  required: ['a', 'd', 'c']
 }
 
 class RemovalEvent {
   state = EventState.PENDING
-  constructor(removals, rclk) {
-    this.removals = removals
-    this.rclk = rclk
+  constructor(sytbl, removals) {
+    Object.assign(this, { sytbl, removals })
   }
 
   toJSON() {
+    const order = new BranchOrder()
     return {
-      removals: this.removals.map(({ start, length }) => ({
-        start: start.toJSON(),
-        length
+      r: this.removals.map(({ start, length, clk }) => ({
+        s: start.toMappedOrderJSON(order),
+        l: length,
+        c: clk.toJSON()
       })),
-      rclk: this.rclk.toJSON()
+      o: order.toJSON((br) => {
+        const { mxid, branch } = this.sytbl.lookupBySymbol(br)
+        if (branch) {
+          return [mxid, branch]
+        } else {
+          return [mxid]
+        }
+      })
     }
   }
 }
@@ -113,15 +222,16 @@ RemovalEvent.JSON.Schema = {
       items: {
         type: 'object',
         properties: {
-          start: LogootPosition.JSON.Schema,
-          length: { type: 'number' }
+          s: MappedLogootPosition,
+          l: { type: 'number' },
+          c: LogootInt.JSON.Schema
         },
-        required: ['start', 'length']
+        required: ['s', 'l', 'c']
       }
     },
-    rclk: LogootInt.JSON.Schema
+    o: OrderLookupArray
   },
-  required: ['removals', 'rclk']
+  required: ['r', 'o']
 }
 
 /**
@@ -156,8 +266,7 @@ class EventAbstractionLayer {
         event.state = EventState.PENDING
 
         for (let i = 0; i < this.event_queue.length; i++) {
-          const ev = this.event_queue[i]
-          if (tryMerge(event, ev)) {
+          if (tryMerge(event, this.event_queue[i])) {
             return
           }
         }
@@ -172,25 +281,27 @@ class EventAbstractionLayer {
     }
   }
 
-  createInsertionEvent(pos, body, send) {
-    const { start, rclk } = this.listdoc.insertLocal(pos, body.length)
-    const event = new InsertionEvent(body, start, rclk)
+  createInsertionEvent(br, pos, body, send) {
+    const { left, right, clk } = this.listdoc.insertLocal(pos, body.length)
+    const event = new InsertionEvent(this.sytbl, br, body, left, right, clk)
 
     return this.sendEvent(event, send, (event, into) => {
       if (
         into !== event &&
         into instanceof InsertionEvent &&
         into.state === EventState.PENDING &&
-        into.rclk.cmp(event.rclk) === 0
+        into.clk.eq(event.clk) &&
+        into.br === event.br
       ) {
-        if (event.start.cmp(into.end) === 0) {
+        if (event.left && event.left.eq(into.end)) {
           debug.info('Merged insertion event to end of other')
           into.body += event.body
+          into.right = event.right
           return true
-        } else if (event.end.cmp(into.start) === 0) {
+        } else if (event.right && event.right.eq(into.start)) {
           debug.info('Merged insertion event to start of other')
           into.body = event.body + into.body
-          into.start = into.start.inverseOffsetLowest(event.body.length)
+          into.left = event.left
           return true
         }
       }
@@ -198,17 +309,16 @@ class EventAbstractionLayer {
     })
   }
   createRemovalEvent(pos, len, send) {
-    const { removals } = this.listdoc.removeLocal(pos, len)
+    const removals = this.listdoc.removeLocal(pos, len)
     // Note: Technically, I shouldn't grab the lamport clock out of the list doc
     // like this, but this retains compatibility with older versions
-    const event = new RemovalEvent(removals, this.listdoc.clock)
+    const event = new RemovalEvent(this.sytbl, removals)
 
     return this.sendEvent(event, send, (event, into) => {
       if (
         into !== event &&
         into instanceof RemovalEvent &&
-        into.state === EventState.PENDING &&
-        into.rclk.cmp(event.rclk) === 0
+        into.state === EventState.PENDING
       ) {
         debug.info('Merged removal events')
         into.removals.push(...event.removals)
@@ -227,16 +337,34 @@ class EventAbstractionLayer {
         return
       }
 
-      const { rclk, start } = content
+      const { a, d, c } = content
+      onNewBranch(this.sytbl, this.listdoc.branch_order, sender)
       const br = this.sytbl.lookupById(sender)
-      body = content.body
+      body = d.join('')
+
+      const order = BranchOrder.fromJSON(a.o, ([mxid, branch]) => {
+        onNewBranch(this.sytbl, this.listdoc.branch_order, mxid, branch)
+        return this.sytbl.lookupById(mxid, branch)
+      })
+      const convertPosition = (array = []) => {
+        if (!array.length) {
+          return undefined
+        }
+        return LogootPosition.fromIntsBranches(
+          this.listdoc.branch_order,
+          ...array.map(([int, branchid]) => {
+            return [LogootInt.fromJSON(int), order.b(branchid)]
+          })
+        )
+      }
 
       operations.push(
         ...this.listdoc.insertLogoot(
           br,
-          LogootPosition.fromJSON(start),
+          convertPosition(a.l),
+          convertPosition(a.r),
           body.length,
-          LogootInt.fromJSON(rclk)
+          LogootInt.fromJSON(c)
         )
       )
     } else if (type === remove_event) {
@@ -245,22 +373,32 @@ class EventAbstractionLayer {
         return
       }
 
-      const { removals, rclk } = content
-      const br = this.sytbl.lookupById(sender)
+      const { r, o } = content
+      const order = BranchOrder.fromJSON(o, ([mxid, branch]) => {
+        onNewBranch(this.sytbl, this.listdoc.branch_order, mxid, branch)
+        return this.sytbl.lookupById(mxid, branch)
+      })
+      const convertPosition = (array = []) => {
+        if (!array.length) {
+          return undefined
+        }
+        return LogootPosition.fromIntsBranches(
+          this.listdoc.branch_order,
+          ...array.map(([int, branchid]) => {
+            return [LogootInt.fromJSON(int), order.b(branchid)]
+          })
+        )
+      }
 
-      removals.forEach(({ start, length }) => {
+      r.forEach(({ s, l, c }) => {
         operations.push(
           ...this.listdoc.removeLogoot(
-            br,
-            LogootPosition.fromJSON(start),
-            length,
-            LogootInt.fromJSON(rclk)
+            convertPosition(s),
+            l,
+            LogootInt.fromJSON(c)
           )
         )
       })
-    } else if (type === namespace_lg1) {
-      // Coming soon ;)
-      debug.warn('New event type. NYI')
     }
 
     if (operations.length) {
@@ -318,9 +456,9 @@ export default ({ store }) => {
             'm.room.topic',
             'm.room.avatar',
             'm.room.aliases',
+            matrix_typed_state,
             insert_event,
-            remove_event,
-            namespace_lg1
+            remove_event
           ]
         },
         state: {
@@ -329,7 +467,8 @@ export default ({ store }) => {
             'm.room.name',
             'm.room.topic',
             'm.room.avatar',
-            'm.room.aliases'
+            'm.room.aliases',
+            matrix_typed_state
           ]
         },
         ephemeral: {
@@ -372,11 +511,25 @@ export default ({ store }) => {
       // data in the Vuex store, it's possible to just pass in the object used
       // by the Matrix JS SDK directly because the Vuex store does state
       // tracking through commits
-      store.commit('matrix/updateRooms', client.getRooms())
+      store.commit(
+        'matrix/updateRooms',
+        client.getRooms().filter((room) => {
+          const state = room.getLiveTimeline().getState('f')
+          const event = state.getStateEvents(matrix_typed_state, '')
+          return (
+            event &&
+            event.event &&
+            event.event.content &&
+            event.event.content.type &&
+            event.event.content.type === plaintext
+          )
+        })
+      )
     }
 
     client.on('Room', updateRooms)
     client.on('Room.name', updateRooms)
+    client.on('RoomState.events', updateRooms)
     client.on('deleteRoom', updateRooms)
     updateRooms()
   }
@@ -456,8 +609,10 @@ export default ({ store }) => {
     const doc = { _active_listeners: [] }
     // A symbol-mxid-branch mapping for conflict support (coming soon!)
     doc.sytbl = new MatrixSymbolTable()
+    doc.br_order = new BranchOrder()
     // The actual algo (also, look up our current user and store a symbol)
-    doc.ldm = new ListDocumentModel(doc.sytbl.lookupById(client.getUserId()))
+    doc.ldm = new ListDocumentModel(doc.br_order)
+    doc.ldm.opts.disable_conflicts = true
     // The event processing layer (all calls will be made to this)
     doc.event_layer = new EventAbstractionLayer(doc.ldm, doc.sytbl)
 
@@ -483,8 +638,12 @@ export default ({ store }) => {
     // Define functions for user operations
     doc.insert = (pos, body) => {
       debug.info(`User inserted ${body} @ ${pos}`)
-      doc.event_layer.createInsertionEvent(pos, body, (ev) =>
-        sendEvent(ev, insert_event)
+      onNewBranch(doc.sytbl, doc.br_order, globals.client.getUserId())
+      doc.event_layer.createInsertionEvent(
+        doc.sytbl.lookupById(globals.client.getUserId()),
+        pos,
+        body,
+        (ev) => sendEvent(ev, insert_event)
       )
     }
     doc.remove = (pos, length) => {
@@ -509,6 +668,9 @@ export default ({ store }) => {
           content,
           sender
         })
+        if (doc.self_test) {
+          doc.ldm.selfTest()
+        }
       } catch (e) {
         debug.warn('Error processing event', e)
       }
@@ -579,6 +741,16 @@ export default ({ store }) => {
       })
 
       sync_i += replay_events.length
+    }
+
+    doc.setupLogging = (self_test = false) => {
+      throw new Error('Logging not yet implemented')
+      // doc.ldm.debug_logger = new ListDocumentModel.JsonableLogger()
+      // doc.self_test = self_test
+    }
+    doc.printEventLogJSON = () => {
+      // eslint-disable-next-line
+      console.log(JSON.stringify(doc.ldm.debug_logger))
     }
 
     // Sync back until we are not recieving document events

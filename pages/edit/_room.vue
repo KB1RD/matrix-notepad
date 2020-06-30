@@ -136,11 +136,9 @@ export default {
           this.documentInsert = ({ pos, body }) => doc.insert(pos, body)
           this.documentRemove = ({ pos, length }) => doc.remove(pos, length)
           this.fetchEvents = (n) => {
-            doc
-              .fetchEvents(n)
-              .catch((e) => {
-                debug.error(e)
-              })
+            doc.fetchEvents(n).catch((e) => {
+              debug.error(e)
+            })
           }
         } catch (e) {
           debug.error('Failed to open document', e)

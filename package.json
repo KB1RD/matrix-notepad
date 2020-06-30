@@ -1,6 +1,6 @@
 {
   "name": "matrix-notepad",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Store & collaborate on text files over the Matrix protocol",
   "author": "Nathan Pennie",
   "license": "GPL-3.0",
@@ -14,7 +14,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@kb1rd/logootish-js": "0.3.1",
+    "@kb1rd/logootish-js": "0.4.2",
     "@nuxtjs/axios": "^5.3.6",
     "bootstrap-vue": "^2.5.0",
     "codemirror": "^5.48.2",

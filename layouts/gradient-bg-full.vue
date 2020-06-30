@@ -19,6 +19,7 @@ html {
   height: 100%;
 }
 
+body,
 #__nuxt,
 #__layout {
   height: 100%;

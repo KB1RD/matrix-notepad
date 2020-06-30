@@ -3,9 +3,10 @@
     title="Add a Room"
     ref="modal"
     :ok-title="type === 'n' ? 'Create' : 'Join'"
-    :busy="adding_room"
-    :no-close-on-backdrop="adding_room"
-    :no-close-on-esc="adding_room"
+    :ok-disabled="!can_submit"
+    :busy="!can_edit"
+    :no-close-on-backdrop="!can_edit"
+    :no-close-on-esc="!can_edit"
     @ok="handleOk"
   >
     <AlertSection ref="alerts" />
@@ -16,26 +17,34 @@
             <b-form-input
               id="name-input"
               v-model="form.name"
-              :disabled="adding_room"
+              :disabled="!can_edit"
               placeholder="Room Name (optional)"
             />
           </b-form-group>
         </b-tab>
         <b-tab title="Join a room"></b-tab>
       </b-tabs>
-      <b-form-group label-for="alias-input">
+      <b-form-group label-for="room-input">
         <b-input-group prepend="#">
           <b-form-input
-            id="alias-input"
-            aria-describedby="alias-live-feedback"
-            v-model="form.alias"
-            :disabled="adding_room"
+            id="room-input"
+            aria-describedby="room-live-feedback"
+            v-model="form.room"
+            :disabled="!can_edit"
             :required="type === 'j'"
-            :state="alias_valid"
-            :placeholder="type === 'n' ? 'Room Alias (optional)' : 'Room Alias'"
+            :state="room_valid"
+            :placeholder="
+              type === 'n' ? 'Room Alias (optional)' : 'Room Alias or ID'
+            "
           />
-          <b-form-invalid-feedback id="alias-live-feedback">
-            Enter just the localpart of the alias.
+          <b-form-invalid-feedback id="room-live-feedback">
+            <template v-if="type === 'n'">
+              Enter just the localpart of the alias to create.
+            </template>
+            <template v-if="type === 'j'">
+              Enter both the localpart and server name with the # or ! (ex.
+              #matrix:matrix.org)
+            </template>
           </b-form-invalid-feedback>
         </b-input-group>
       </b-form-group>
@@ -46,13 +55,14 @@
 <script>
 import { debug } from '@/plugins/debug'
 import AlertSection from '@/components/AlertSection'
+import { matrix_typed_state, plaintext } from '@/plugins/matrix.js'
 
 export default {
   components: { AlertSection },
   data() {
     return {
       form: {
-        alias: '',
+        room: '',
         name: '',
         tab: 0
       },
@@ -65,11 +75,24 @@ export default {
     type() {
       return this.form.tab === 0 ? 'n' : 'j'
     },
-    alias_valid() {
-      const res = /^[^#:]*$/gm.exec(this.form.alias)
-      return this.form.alias.length || this.type === 'j'
-        ? (res && res.index === 0) || false
-        : undefined
+    room_valid() {
+      if (this.type === 'n') {
+        const res = /^[^!#:]*$/gm.exec(this.form.room)
+        return res && res.index === 0 ? undefined : false
+      } else if (this.type === 'j') {
+        const res = /^[!#][^!#:]+:[a-zA-Z0-9-.]+(:[0-9]+)?$/gm.exec(
+          this.form.room
+        )
+        return res && res.index === 0 ? undefined : false
+      }
+      return false
+    },
+    can_submit() {
+      // BS has a really weird way of validating forms
+      return this.room_valid !== false && !this.adding_room
+    },
+    can_edit() {
+      return !this.adding_room
     }
   },
 
@@ -86,15 +109,25 @@ export default {
         return
       }
 
-      const alias = values.alias.trim()
+      const room = values.room.trim()
       const name = values.name
       this.adding_room = true
       if (this.type === 'n') {
         this.$matrix.client
           .createRoom({
-            room_alias_name: alias !== '' ? alias : undefined,
+            room_alias_name: room !== '' ? room : undefined,
             name: name !== '' ? name : undefined
           })
+          .then((data) =>
+            this.$matrix.client
+              .sendStateEvent(
+                data.room_id,
+                matrix_typed_state,
+                { type: plaintext },
+                ''
+              )
+              .then(() => data)
+          )
           .then(
             ({ room_id }) => {
               if (room_id) {
@@ -115,12 +148,12 @@ export default {
           })
       } else if (this.type === 'j') {
         this.$matrix.client
-          .joinRoom(values.room, { syncRoom: false })
+          .joinRoom(`${values.room}`, { syncRoom: false })
           .then(
             ({ roomId }) => {
-              if (roomId) {
+              /* if (roomId) {
                 this.$router.replace('/edit/' + encodeURIComponent(roomId))
-              }
+              } */
               this.hide()
             },
             (e) => {
@@ -139,10 +172,7 @@ export default {
 
     handleOk(e) {
       e.preventDefault()
-      if (
-        this.alias_valid === false ||
-        (!this.alias_valid && this.type === 'j')
-      ) {
+      if (!this.can_submit) {
         return
       }
       this.onFormSubmit(this.form)

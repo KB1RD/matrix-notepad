@@ -12,12 +12,10 @@
             placeholder="Untitled Document"
             v-model="internal_title"
             @blur="(e) => e.target.focus()"
+            @keyup="onTitleInputKeyEvent"
           />
           <b-input-group-append v-if="internal_title !== title">
-            <b-button
-              variant="success"
-              @click="$emit('set-title', internal_title)"
-            >
+            <b-button variant="success" @click="onTitleChangeRequested()">
               <b-icon icon="check" />
             </b-button>
             <b-button variant="danger" @click="() => (internal_title = title)">
@@ -62,6 +60,7 @@ export default {
         line: true,
         theme: 'mdn-like'
       },
+      console,
 
       changes_to_ignore: {}
     }
@@ -78,6 +77,21 @@ export default {
   },
 
   methods: {
+    onTitleChangeRequested() {
+      this.$emit('set-title', this.internal_title)
+    },
+    onTitleInputKeyEvent(e) {
+      switch (e.keyCode) {
+        case 13:
+          this.onTitleChangeRequested()
+          e.target.blur()
+          break
+        case 27:
+          e.target.blur()
+          break
+      }
+    },
+
     insert(pos, text, meta) {
       const cmdoc = this.$refs.codemirror.codemirror.doc
       debug.log(`INSERT '${text}' AT ${pos}`)
@@ -159,7 +173,7 @@ export default {
   height: 100%;
 }
 .input-text-unless-focus:not(:focus) {
-  background-color: #0000;
+  background-color: #0000000e;
   border-color: #0000;
 }
 .with-loading {

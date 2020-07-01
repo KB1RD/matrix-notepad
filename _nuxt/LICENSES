@@ -1,11 +1,11 @@
 /*!
-  * vue-router v3.1.5
+  * vue-router v3.3.4
   * (c) 2020 Evan You
   * @license MIT
   */
 
 /*!
- * BootstrapVue Icons, generated from Bootstrap Icons 1.0.0-alpha2
+ * BootstrapVue Icons, generated from Bootstrap Icons 1.0.0-alpha4
  *
  * @link https://icons.getbootstrap.com/
  * @license MIT
@@ -43,6 +43,12 @@
  * Released under the MIT License.
  */
 
+/*!
+ * vuex v3.5.1
+ * (c) 2020 Evan You
+ * @license MIT
+ */
+
 /*! 
   * portal-vue © Thorsten Lünborg, 2019 
   * 
@@ -56,11 +62,7 @@
 
 /*! https://mths.be/punycode v1.4.1 by @mathias */
 
-/**
- * vuex v3.1.2
- * (c) 2019 Evan You
- * @license MIT
- */
+/*! safe-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 
 /**!
  * @fileOverview Kickass library to create and place poppers near their reference elements.

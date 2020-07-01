@@ -1,6 +1,6 @@
 {
   "name": "matrix-notepad",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Store & collaborate on text files over the Matrix protocol",
   "author": "Nathan Pennie",
   "license": "GPL-3.0",

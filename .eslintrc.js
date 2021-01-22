@@ -1,28 +1,27 @@
 module.exports = {
   root: true,
   env: {
-    browser: true,
-    node: true
-  },
-  parserOptions: {
-    parser: 'babel-eslint'
+    node: true,
   },
   extends: [
-    '@nuxtjs',
-    'prettier',
-    'prettier/vue',
-    'plugin:prettier/recommended',
-    'plugin:nuxt/recommended'
+    'plugin:vue/essential',
+    '@vue/airbnb',
+    '@vue/typescript/recommended',
   ],
-  plugins: [
-    'prettier'
-  ],
+  parserOptions: {
+    ecmaVersion: 2020,
+  },
   rules: {
-    // See https://github.com/KB1RD/matrix-notepad/wiki/Program-Organization
-    camelcase: 'off',
-    // I want the ability to order attributes as I see fit. For example, I
-    // think it makes sense to put the 'title' attribute of a panel first
-    // to improve readability.
-    'vue/attributes-order': 'off'
-  }
-}
+    'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+    'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+    '@typescript-eslint/camelcase': 'off',
+    'class-methods-use-this': 'off',
+    'lines-between-class-members': 'off',
+    'no-return-assign': 'off',
+    '@typescript-eslint/no-namespace': 'off',
+    'max-classes-per-file': 'off',
+    'no-useless-constructor': 'off',
+    'no-param-reassign': ['error', { "props": false }],
+    'no-cond-assign': 'off',
+  },
+};

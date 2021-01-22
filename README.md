@@ -3,7 +3,7 @@
 
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/kb1rd/matrix-notepad)
 ![Matrix](https://img.shields.io/matrix/matrix-collaboration:kb1rd.net?label=chat%20on%20%23matrix-collaboration%3Akb1rd.net&server_fqdn=matrix.org)
-![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/KB1RD/matrix-notepad/build/master?label=build%20and%20deploy)
+![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/KB1RD/matrix-notepad/Build/master?label=build%20and%20deploy)
 ![GitHub](https://img.shields.io/github/license/kb1rd/matrix-notepad)
 
 Check it out at [matrix-notepad.kb1rd.net](https://matrix-notepad.kb1rd.net/) and come chat at [#matrix-collaboration:kb1rd.net](https://matrix.to/#/#matrix-collaboration:kb1rd.net?via=kb1rd.net&via=matrix.org&via=matrix.geklautecloud.de)! I'd love to hear about what you think (and what issues you encounter)!

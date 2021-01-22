@@ -1,0 +1,150 @@
+@each $color, $value in $theme-colors {
+  .btn-#{$color}, .badge-#{$color} {
+    border-color: #0000;
+    background-color: theme-color-level($color);
+  }
+  .btn-#{$color} {
+    box-shadow: 0px 0px 8px rgba(theme-color-level($color, -3), 0.5);
+  }
+  .badge-#{$color} {
+    box-shadow: 0px 0px 4px rgba(theme-color-level($color, -3), 0.5);
+  }
+  .btn-#{$color}:not(:disabled):not(.disabled):hover {
+    border-color: #0000;
+    box-shadow: 0px 0px 10px rgba(theme-color-level($color, -3), 1);
+    background-color: lighten(theme-color($color), 10%);
+  }
+  .btn-#{$color}:not(:disabled):not(.disabled).active, .btn-#{$color}:not(:disabled):not(.disabled):active {
+    border-color: #0000;
+    box-shadow: 0px 0px 10px rgba(theme-color-level($color, -3), 1);
+    background-color: lighten(theme-color($color), 10%);
+  }
+  .btn-#{$color}:not(:disabled):not(.disabled).active:focus, .btn-#{$color}:not(:disabled):not(.disabled):active:focus, .show > .btn-#{$color}.dropdown-toggle:focus {
+    border-color: #0000;
+    box-shadow: 0px 0px 10px rgba(theme-color-level($color, -5), 1);
+    background-color: darken(theme-color($color), 10%);
+  }
+  .btn-#{$color}:focus {
+    border-color: #0000;
+    box-shadow: 0px 0px 10px rgba(theme-color-level($color, -3), 1);
+    background-color: lighten(theme-color($color), 5%);
+  }
+
+  .btn-outline-#{$color} {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+  .btn-outline-#{$color}:not(:disabled):not(.disabled):hover {
+    box-shadow: 0px 0px 10px rgba(theme-color-level($color, -3), 0.05);
+    background-color: transparentize(saturate(theme-color($color), 25%), 0.8);
+    color: theme-color-level($color, 3);
+  }
+  .btn-outline-#{$color}:not(:disabled):not(.disabled).active, .btn-outline-#{$color}:not(:disabled):not(.disabled):active {
+    $bgcolor: lighten(theme-color($color), 10%);
+    box-shadow: 0px 0px 10px rgba(theme-color-level($color, -3), 1);
+    background-color: $bgcolor;
+    color: color-yiq($bgcolor);
+  }
+  .btn-outline-#{$color}:not(:disabled):not(.disabled).active:focus, .btn-outline-#{$color}:not(:disabled):not(.disabled):active:focus, .show > .btn-#{$color}.dropdown-toggle:focus {
+    $bgcolor: darken(theme-color($color), 10%);
+    box-shadow: 0px 0px 10px rgba(theme-color-level($color, -5), 1);
+    background-color: $bgcolor;
+    color: color-yiq($bgcolor);
+  }
+  .btn-outline-#{$color}:focus {
+    box-shadow: 0px 0px 10px rgba(theme-color-level($color, -3), 0.2);
+    background-color: transparentize(saturate(theme-color($color), 25%), 0.8);
+  }
+
+  .btn-#{$color} + * .dropdown-item:hover {
+    background-color: rgba(lighten(theme-color($color), 10%), 0.15);
+    box-shadow: 0px 0px 8px rgba(lighten(theme-color($color), 10%), 0.15);
+  }
+}
+
+.breadcrumb-item a:hover {
+  text-decoration: none;
+  text-shadow: 0px 0px 4px rgba(theme-color-level('primary', -3), 0.25);
+}
+
+@each $color, $value in $theme-colors {
+  .alert-#{$color} {
+    border: none;
+    box-shadow: 0px 0px 20px rgba(theme-color-level($color, -5), 0.25);
+  }
+}
+
+.list-group {
+  border: none;
+}
+@each $color, $value in $theme-colors {
+  .list-group-item-#{$color} {
+    border: none;
+    box-shadow: 0px 0px 20px rgba(theme-color-level($color, -5), 0.25);
+  }
+}
+
+.card, .card-header {
+  border: none;
+}
+.table-hover tbody tr:hover {
+  filter: brightness(105%) saturate(105%);
+  background-color: #0000;
+}
+@each $color, $value in $theme-colors {
+  .bg-#{$color} {
+    box-shadow: 0px 0px 20px rgba(theme-color-level($color, -5), 0.75);
+  }
+  tbody .bg-#{$color} {
+    box-shadow: none;
+  }
+  .table-hover tbody tr:hover .bg-#{$color} {
+    box-shadow: 0px 0px 20px rgba(theme-color-level($color, -5), 0.5);
+  }
+  .table-hover tbody tr:hover .table-#{$color} {
+    box-shadow: 0px 0px 20px rgba(theme-color-level($color, -5), 0.25);
+  }
+}
+
+.page-link:focus {
+  box-shadow: 0px 0px 8px rgba(theme-color-level('primary', -3), 0.5);
+}
+
+.form-control:focus, .custom-select:focus {
+  box-shadow: 0px 0px 8px rgba(theme-color-level('primary', -3), 0.5);
+}
+.custom-control-input:focus~.custom-control-label::before {
+  box-shadow: 0px 0px 4px rgba(theme-color-level('primary', -3), 0.5);
+}
+.form-control.is-valid, .was-validated .form-control:valid {
+  box-shadow: 0px 0px 4px rgba(theme-color-level('success', -3), 0.5);
+}
+.form-control.is-valid:focus, .was-validated .form-control:focus:valid {
+  box-shadow: 0px 0px 8px rgba(theme-color-level('success', -3), 0.5);
+}
+.form-control.is-invalid, .was-validated .form-control:invalid {
+  box-shadow: 0px 0px 4px rgba(theme-color-level('danger', -3), 0.5);
+}
+.form-control.is-invalid:focus, .was-validated .form-control:focus:invalid {
+  box-shadow: 0px 0px 8px rgba(theme-color-level('danger', -3), 0.5);
+}
+
+.custom-range::-moz-range-thumb {
+  box-shadow: 0px 0px 4px rgba(theme-color-level('primary', -3), 0.5);
+}
+.custom-range:focus::-moz-range-thumb {
+  box-shadow: 0px 0px 8px rgba(theme-color-level('primary', -3), 0.5);
+}
+.custom-range::-webkit-slider-thumb {
+  box-shadow: 0px 0px 4px rgba(theme-color-level('primary', -3), 0.5);
+}
+.custom-range:focus::-webkit-slider-thumb {
+  box-shadow: 0px 0px 8px rgba(theme-color-level('primary', -3), 0.5);
+}
+.custom-range::-ms-thumb {
+  box-shadow: 0px 0px 4px rgba(theme-color-level('primary', -3), 0.5);
+}
+.custom-range:focus::-ms-thumb {
+  box-shadow: 0px 0px 8px rgba(theme-color-level('primary', -3), 0.5);
+}

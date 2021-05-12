@@ -17,7 +17,7 @@
     "@kb1rd/logootish-js": "0.4.2",
     "@nuxtjs/axios": "^5.3.6",
     "bootstrap-vue": "^2.5.0",
-    "codemirror": "^5.48.2",
+    "codemirror": "^5.58.2",
     "jsonschema": "^1.2.5",
     "matrix-js-sdk": "^2.3.0",
     "nuxt": "^2.0.0",
